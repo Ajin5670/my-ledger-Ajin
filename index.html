@@ -3,180 +3,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>旅行足迹 & 智能记账</title>
-    
-    <!-- PWA 配置 -->
+    <title>Ajin 智能记账 & 智能足迹</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#2c4a3e">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/wallet.png">
     
-    <!-- 引入刚刚设计好的山水图标作为 PWA/Tab 图标 -->
-    <link rel="apple-touch-icon" href="icon.png">
-    <link rel="icon" type="image/png" href="icon.png">
-
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Leaflet 地图 CSS 与 JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f5; overscroll-behavior-y: none; }
-        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-        .pulse-marker { width: 18px; height: 18px; background-color: #3b82f6; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
+        :root {
+            --sat: env(safe-area-inset-top);
+            --sab: env(safe-area-inset-bottom);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            padding-top: var(--sat);
+            padding-bottom: var(--sab);
+        }
+        /* 安全区适配 Header */
+        .safe-header {
+            padding-top: max(12px, var(--sat));
+        }
+        /* 安全区适配 Footer */
+        .safe-nav {
+            padding-bottom: max(10px, var(--sab));
+        }
+        .pulse-marker {
+            width: 18px; height: 18px; background-color: #3b82f6; border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        .modal-overlay { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
     </style>
 </head>
-<body class="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden text-slate-800">
+<body class="text-gray-800 flex flex-col h-screen overflow-hidden">
 
-    <!-- 顶部标题栏 -->
-    <header class="glass-header z-20 px-4 py-3 flex items-center justify-between border-b border-emerald-900/10 shrink-0">
-        <div class="flex items-center space-x-2">
-            <img src="icon.png" alt="Icon" class="w-8 h-8 rounded-lg object-cover shadow-sm">
-            <h1 class="font-bold text-lg tracking-wide text-emerald-900">旅行足迹 & 记账</h1>
-        </div>
-        <div id="total-badge" class="text-xs font-semibold bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full shadow-sm">
-            总支出: ¥0
-        </div>
+    <!-- 适配 iOS 刘海/灵动岛的 Safe Header -->
+    <header class="safe-header bg-white border-b border-gray-100 px-4 pb-3 text-center font-bold text-base shadow-2xs z-30 flex-none">
+        ✨ Ajin 智能记账 & 智能足迹
     </header>
 
-    <!-- 主体区域：地图与记账列表切换 -->
-    <main class="flex-1 relative flex flex-col overflow-hidden">
-        <!-- 地图容器 -->
-        <div id="map" class="absolute inset-0 z-0"></div>
-
-        <!-- 底部浮动面板（账单摘要与快速入口） -->
-        <div class="absolute bottom-4 left-4 right-4 z-10 glass-header p-4 rounded-2xl shadow-xl border border-white/40 flex flex-col space-y-3">
-            <div class="flex justify-between items-center">
-                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">最近足迹账单</span>
-                <button onclick="openModal()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-4 py-2 rounded-xl font-medium shadow-md transition active:scale-95 flex items-center space-x-1">
-                    <span>+ 记一笔</span>
-                </button>
+    <!-- 主体区域 -->
+    <main class="flex-1 relative overflow-hidden">
+        
+        <!-- Tab 1: 日常记账 -->
+        <div id="tab-daily" class="h-full overflow-y-auto p-4 space-y-4 pb-24 max-w-lg mx-auto">
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">消费金额</label>
+                <div class="flex items-center space-x-2 border-b border-gray-100 pb-2">
+                    <span class="text-3xl font-bold text-gray-300">￥</span>
+                    <input type="number" id="daily-amount" placeholder="0.00" class="w-full text-3xl font-extrabold focus:outline-none text-blue-600">
+                </div>
             </div>
-            <div id="recent-list" class="max-h-28 overflow-y-auto space-y-2 text-xs divide-y divide-slate-100">
-                <!-- 动态填充 -->
+
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">分类选择</label>
+                <div class="grid grid-cols-3 gap-2.5">
+                    <button onclick="selectCategory('🍔 餐饮')" class="cat-btn py-3 rounded-2xl border border-blue-500 bg-blue-50/80 text-blue-600 font-semibold text-sm transition">🍔 餐饮</button>
+                    <button onclick="selectCategory('🚗 交通')" class="cat-btn py-3 rounded-2xl border border-gray-100 bg-gray-50 text-gray-600 font-semibold text-sm transition">🚗 交通</button>
+                    <button onclick="selectCategory('🛍️ 购物')" class="cat-btn py-3 rounded-2xl border border-gray-100 bg-gray-50 text-gray-600 font-semibold text-sm transition">🛍️ 购物</button>
+                    <button onclick="selectCategory('🎫 门票')" class="cat-btn py-3 rounded-2xl border border-gray-100 bg-gray-50 text-gray-600 font-semibold text-sm transition">🎫 门票</button>
+                    <button onclick="selectCategory('🏨 住宿')" class="cat-btn py-3 rounded-2xl border border-gray-100 bg-gray-50 text-gray-600 font-semibold text-sm transition">🏨 住宿</button>
+                    <button onclick="selectCategory('📦 其他')" class="cat-btn py-3 rounded-2xl border border-gray-100 bg-gray-50 text-gray-600 font-semibold text-sm transition">📦 其他</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">备注说明</label>
+                <input type="text" id="daily-note" placeholder="写点备注..." class="w-full focus:outline-none text-sm bg-gray-50 p-3 rounded-2xl border border-gray-100">
+            </div>
+
+            <button onclick="saveDaily()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/25 active:scale-98 transition">
+                保存记账
+            </button>
+
+            <!-- 月度与年份账单 -->
+            <div class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-gray-700">📊 月度账单统计</h3>
+                    <div class="flex space-x-2">
+                        <select id="filter-year" onchange="renderMonthlyBill()" class="bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1 text-xs font-semibold text-gray-600 focus:outline-none"></select>
+                        <select id="filter-month" onchange="renderMonthlyBill()" class="bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1 text-xs font-semibold text-gray-600 focus:outline-none">
+                            <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
+                            <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
+                            <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
+                            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="bg-blue-50/50 p-3.5 rounded-2xl flex justify-between items-center">
+                    <span class="text-xs text-gray-500 font-medium">本月总消费</span>
+                    <span id="monthly-total-amount" class="text-lg font-black text-blue-600">￥0.00</span>
+                </div>
+                <div id="daily-breakdown-list" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+            </div>
+
+            <div class="mt-4">
+                <h3 class="font-bold text-sm text-gray-500 mb-3 px-1">最近流水</h3>
+                <div id="daily-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Tab 2: 旅行足迹 -->
+        <div id="tab-travel" class="hidden h-full w-full relative">
+            <!-- 顶栏浮动控制卡片 -->
+            <div class="absolute top-3 left-3 right-3 z-20 flex flex-col gap-2 pointer-events-none">
+                <div class="bg-white/95 backdrop-blur-md p-2.5 rounded-2xl shadow-lg border border-gray-100 flex justify-between items-center pointer-events-auto">
+                    <div id="trip-status-indicator" class="text-xs font-semibold text-gray-600 truncate max-w-[170px]">
+                        ⚪ 浏览模式
+                    </div>
+                    <div class="flex space-x-1.5">
+                        <button onclick="locateMe()" class="px-3 py-1.5 bg-gray-100 active:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 transition">
+                            🎯 定位
+                        </button>
+                        <button id="btn-toggle-trip" onclick="toggleTripState()" class="px-3.5 py-1.5 bg-blue-600 active:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition">
+                            🚀 开始旅行
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 左上角总揽卡片 -->
+                <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-gray-100 w-60 max-h-[35vh] flex flex-col pointer-events-auto">
+                    <div class="border-b border-gray-100 pb-1.5 mb-1.5">
+                        <div id="panel-title-tag" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">本次行程累计花费</div>
+                        <div id="trip-total-cost" class="text-xl font-black text-red-500">￥0.00</div>
+                        <div id="trip-meta" class="text-[10px] text-gray-400 mt-0.5">站点: 0 | 状态: 未开始</div>
+                    </div>
+                    <div id="trip-nodes-list" class="flex-1 overflow-y-auto space-y-1 text-xs">
+                        <div class="text-gray-400 text-center py-2 text-[11px]">双击地图标起点，点击开始旅行</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 地图画布 -->
+            <div id="map" class="w-full h-full z-0"></div>
+
+            <!-- 底部归档卡片悬浮层 -->
+            <div class="absolute bottom-16 left-3 right-3 z-20 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-gray-100 max-h-32 overflow-y-auto shadow-xl">
+                <div class="text-xs font-bold text-gray-600 mb-1.5 flex items-center justify-between">
+                    <span>📜 归档历史行程</span>
+                    <span class="text-[10px] text-gray-400 font-normal">点击预览轨迹</span>
+                </div>
+                <div id="archived-trips-list" class="space-y-1 text-xs"></div>
             </div>
         </div>
     </main>
 
-    <!-- 记账弹窗 -->
-    <div id="record-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform transition-all animate-in slide-in-from-bottom duration-200">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-base text-slate-800">记录新足迹与消费</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+    <!-- 底部固定导航栏（安全区适配 + 高 z-index 置顶） -->
+    <nav class="safe-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 flex justify-around py-2 z-50 shadow-2xl">
+        <button onclick="switchTab('daily')" id="nav-daily" class="flex flex-col items-center text-blue-600 font-bold text-xs">
+            <span class="text-base mb-0.5">💰</span>日常记账
+        </button>
+        <button onclick="switchTab('travel')" id="nav-travel" class="flex flex-col items-center text-gray-400 font-semibold text-xs">
+            <span class="text-base mb-0.5">🗺️</span>旅行足迹
+        </button>
+    </nav>
+
+    <!-- 打卡记账 Modal 弹窗 -->
+    <div id="custom-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-base text-gray-800">📍 添加打卡点</h3>
+                <button onclick="closeModal()" class="text-gray-400 text-lg font-bold px-2">×</button>
             </div>
-            <form id="record-form" onsubmit="handleSave(event)" class="space-y-3 text-sm">
+            <div class="space-y-3">
                 <div>
-                    <label class="block text-xs text-slate-500 mb-1">地点名称</label>
-                    <input type="text" id="loc-name" required placeholder="例如：武汉大学东湖绿道" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs text-slate-500 mb-1">分类</label>
-                        <select id="loc-category" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option value="景区/门票">景区/门票</option>
-                            <option value="餐饮美食">餐饮美食</option>
-                            <option value="交通出行">交通出行</option>
-                            <option value="酒店住宿">酒店住宿</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-500 mb-1">金额 (元)</label>
-                        <input type="number" step="0.01" id="loc-amount" required placeholder="0.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">地点名称</label>
+                    <input type="text" id="modal-input-name" class="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 text-sm focus:outline-none focus:border-blue-500 font-medium">
                 </div>
                 <div>
-                    <label class="block text-xs text-slate-500 mb-1">备注说明</label>
-                    <input type="text" id="loc-note" placeholder="写点旅行心情..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <label class="block text-xs font-bold text-gray-400 mb-1">消费金额 (元)</label>
+                    <input type="number" id="modal-input-cost" class="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 text-sm focus:outline-none focus:border-blue-500 font-bold text-red-500" placeholder="0.00">
                 </div>
-                <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-medium py-3 rounded-xl shadow-lg mt-2 transition active:scale-95">保存记录</button>
-            </form>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1">备注说明</label>
+                    <input type="text" id="modal-input-note" class="w-full bg-gray-50 border border-gray-200 rounded-2xl p-3 text-sm focus:outline-none focus:border-blue-500" placeholder="写点备注...">
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-2xl text-sm">取消</button>
+                <button id="modal-btn-confirm" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-2xl text-sm shadow-md">确定保存</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // 初始化 LocalStorage 数据
-        let records = JSON.parse(localStorage.getItem('travel_records')) || [
-            { id: 1, name: '武汉大学', category: '景区/门票', amount: 80, note: '东湖绿道骑行', lat: 30.545, lng: 114.365, date: '2026-06-06' }
-        ];
+        let currentCategory = '🍔 餐饮';
+        let dailyRecords = JSON.parse(localStorage.getItem('daily_records')) || [];
+        let archivedTrips = JSON.parse(localStorage.getItem('archived_trips')) || [];
+        
+        let activeTrip = JSON.parse(localStorage.getItem('active_trip')) || {
+            isTravelling: false,
+            startTime: null,
+            points: []
+        };
 
-        // 初始化高德/Leaflet 地图 (以武汉为例，可自行调整初始经纬度)
-        const map = L.map('map', { zoomControl: false }).setView([30.55, 114.30], 13);
-        L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
-            subdomains: ["1", "2", "3", "4"],
-            minZoom: 3,
-            maxZoom: 18
-        }).addTo(map);
+        let map, markersLayer, redPolyline, myLocationMarker, startLocationMarker;
+        let previewTrip = null;
+        let pendingPointData = null;
 
-        const markersLayer = L.layerGroup().addTo(map);
+        function initDateSelectors() {
+            const yearSelect = document.getElementById('filter-year');
+            const monthSelect = document.getElementById('filter-month');
+            const currentYear = new Date().getFullYear();
+            
+            let yearsHTML = '';
+            for (let y = currentYear - 2; y <= currentYear + 2; y++) {
+                yearsHTML += `<option value="${y}">${y}年</option>`;
+            }
+            yearSelect.innerHTML = yearsHTML;
+            yearSelect.value = currentYear;
 
-        function render() {
-            markersLayer.clearLayers();
-            let total = 0;
-            const listEl = document.getElementById('recent-list');
-            listEl.innerHTML = '';
+            const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+            monthSelect.value = currentMonth;
+        }
 
-            records.slice().reverse().forEach(item => {
-                total += Number(item.amount);
+        function selectCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = btn.innerText.includes(cat) 
+                    ? "cat-btn py-3 rounded-2xl border border-blue-500 bg-blue-50/80 text-blue-600 font-semibold text-sm transition"
+                    : "cat-btn py-3 rounded-2xl border border-gray-100 bg-gray-50 text-gray-600 font-semibold text-sm transition";
+            });
+        }
 
-                // 添加地图 Marker
-                if(item.lat && item.lng) {
-                    const customIcon = L.divIcon({
-                        className: 'custom-div-icon',
-                        html: '<div class="pulse-marker"></div>',
-                        iconSize: [20, 20],
-                        iconAnchor: [10, 10]
+        function switchTab(tab) {
+            if (tab === 'daily') {
+                document.getElementById('tab-daily').classList.remove('hidden');
+                document.getElementById('tab-travel').classList.add('hidden');
+                document.getElementById('nav-daily').className = "flex flex-col items-center text-blue-600 font-bold text-xs";
+                document.getElementById('nav-travel').className = "flex flex-col items-center text-gray-400 font-semibold text-xs";
+                renderMonthlyBill();
+            } else {
+                document.getElementById('tab-daily').classList.add('hidden');
+                document.getElementById('tab-travel').classList.remove('hidden');
+                document.getElementById('nav-travel').className = "flex flex-col items-center text-blue-600 font-bold text-xs";
+                document.getElementById('nav-daily').className = "flex flex-col items-center text-gray-400 font-semibold text-xs";
+                setTimeout(() => {
+                    if (!map) initMap();
+                    else map.invalidateSize();
+                }, 100);
+            }
+        }
+
+        function saveDaily() {
+            const amount = document.getElementById('daily-amount').value;
+            const note = document.getElementById('daily-note').value;
+            if (!amount) return alert('请输入金额！');
+
+            dailyRecords.unshift({
+                date: new Date().toISOString(),
+                displayDate: new Date().toLocaleString(),
+                category: currentCategory,
+                amount: parseFloat(amount).toFixed(2),
+                note: note || '无备注'
+            });
+
+            localStorage.setItem('daily_records', JSON.stringify(dailyRecords));
+            document.getElementById('daily-amount').value = '';
+            document.getElementById('daily-note').value = '';
+            renderDailyList();
+            renderMonthlyBill();
+            alert('记账成功！');
+        }
+
+        function renderDailyList() {
+            document.getElementById('daily-list').innerHTML = dailyRecords.slice(0, 15).map(r => `
+                <div class="bg-white p-3.5 rounded-2xl border border-gray-100 flex justify-between items-center shadow-2xs">
+                    <div>
+                        <div class="font-bold text-sm text-gray-800">${r.category} <span class="text-gray-400 font-normal text-xs">(${r.displayDate || r.date})</span></div>
+                        <div class="text-xs text-gray-500 mt-0.5">备注: ${r.note}</div>
+                    </div>
+                    <div class="font-extrabold text-blue-600 text-base">￥${r.amount}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderMonthlyBill() {
+            const year = document.getElementById('filter-year').value;
+            const month = document.getElementById('filter-month').value;
+            const prefix = `${year}-${month}`;
+
+            const matched = dailyRecords.filter(r => r.date && r.date.startsWith(prefix));
+            const total = matched.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+            document.getElementById('monthly-total-amount').innerText = `￥${total.toFixed(2)}`;
+
+            let daysMap = {};
+            matched.forEach(r => {
+                const dayStr = r.date.split('T')[0];
+                if (!daysMap[dayStr]) daysMap[dayStr] = { total: 0, items: [] };
+                daysMap[dayStr].total += parseFloat(r.amount);
+                daysMap[dayStr].items.push(r);
+            });
+
+            const breakdownEl = document.getElementById('daily-breakdown-list');
+            const sortedDays = Object.keys(daysMap).sort().reverse();
+
+            if (sortedDays.length === 0) {
+                breakdownEl.innerHTML = `<div class="text-gray-400 text-center py-3 text-xs">该月份暂无消费记录</div>`;
+                return;
+            }
+
+            breakdownEl.innerHTML = sortedDays.map(day => {
+                const dayData = daysMap[day];
+                return `
+                    <div class="bg-gray-50/80 p-3 rounded-2xl border border-gray-100 space-y-2">
+                        <div class="flex justify-between items-center font-bold text-xs text-gray-700 border-b border-gray-200/60 pb-1">
+                            <span>📅 ${day}</span>
+                            <span class="text-blue-600">￥${dayData.total.toFixed(2)}</span>
+                        </div>
+                        <div class="space-y-1">
+                            ${dayData.items.map(item => `
+                                <div class="flex justify-between items-center text-xs text-gray-600 bg-white p-2 rounded-xl border border-gray-100">
+                                    <span>${item.category} <span class="text-gray-400 text-[10px]">(${item.note})</span></span>
+                                    <span class="font-bold text-gray-800">￥${item.amount}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function initMap() {
+            // 地图 Retinal 高清像素配置
+            map = L.map('map', { doubleClickZoom: false, zoomControl: false }).setView([30.5728, 104.0668], 12);
+            
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}', {
+                attribution: '&copy; 高德地图',
+                tileSize: 256,
+                zoomOffset: 0
+            }).addTo(map);
+
+            markersLayer = L.layerGroup().addTo(map);
+
+            map.on('click', function(e) {
+                if (activeTrip.isTravelling) {
+                    openModal(e.latlng.lat, e.latlng.lng);
+                }
+            });
+
+            map.on('dblclick', function(e) {
+                if (!activeTrip.isTravelling) {
+                    if (startLocationMarker) map.removeLayer(startLocationMarker);
+                    startLocationMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map)
+                        .bindPopup("<b>📍 拟定出发起点</b><br>点击上方【🚀 开始旅行】激活！").openPopup();
+                }
+            });
+
+            updateTripUI();
+            renderArchivedTrips();
+        }
+
+        function locateMe() {
+            if (!navigator.geolocation) return alert('浏览器不支持定位');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                map.setView([lat, lng], 15);
+
+                if (myLocationMarker) map.removeLayer(myLocationMarker);
+                const pulseIcon = L.divIcon({ className: 'pulse-marker', iconSize: [18, 18] });
+                myLocationMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(map).bindPopup('<b>🎯 当前定位位置</b>').openPopup();
+            }, () => alert('定位失败，请允许浏览器定位权限。'));
+        }
+
+        function toggleTripState() {
+            previewTrip = null;
+            if (!activeTrip.isTravelling) {
+                activeTrip = {
+                    isTravelling: true,
+                    startTime: new Date().toLocaleString(),
+                    points: []
+                };
+
+                if (startLocationMarker) {
+                    const latlng = startLocationMarker.getLatLng();
+                    activeTrip.points.push({
+                        lat: latlng.lat, lng: latlng.lng, name: "行程起点", cost: 0,
+                        type: "📍 起点", time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), note: "出发地"
                     });
-                    L.marker([item.lat, item.lng], { icon: customIcon })
-                        .bindPopup(`<b>${item.name}</b><br>${item.category}: ¥${item.amount}<br><span class="text-xs text-gray-500">${item.note || ''}</span>`)
-                        .addTo(markersLayer);
+                    map.removeLayer(startLocationMarker);
+                    startLocationMarker = null;
                 }
 
-                // 渲染底部列表
-                const row = document.createElement('div');
-                row.className = 'flex justify-between items-center py-1';
-                row.innerHTML = `
-                    <div>
-                        <span class="font-semibold text-slate-700">${item.name}</span>
-                        <span class="text-[10px] text-slate-400 ml-1">(${item.category})</span>
-                    </div>
-                    <span class="font-bold text-emerald-700">¥${item.amount}</span>
-                `;
-                listEl.appendChild(row);
-            });
-
-            document.getElementById('total-badge').innerText = `总支出: ¥${total.toFixed(2)}`;
-            localStorage.setItem('travel_records', JSON.stringify(records));
+                alert('🚀 旅行已开始！点击地图任意位置可添加打卡点。');
+            } else {
+                if (confirm('确认结束本次旅行并归档吗？')) {
+                    activeTrip.isTravelling = false;
+                    activeTrip.endTime = new Date().toLocaleString();
+                    archivedTrips.unshift({...activeTrip});
+                    localStorage.setItem('archived_trips', JSON.stringify(archivedTrips));
+                    activeTrip.points = [];
+                    alert('🏁 旅行已安全归档！');
+                }
+            }
+            saveActiveTrip();
+            updateTripUI();
+            renderArchivedTrips();
         }
 
-        function openModal() { document.getElementById('record-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('record-modal').classList.add('hidden'); }
+        function openModal(lat, lng) {
+            pendingPointData = { lat, lng };
+            document.getElementById('modal-input-name').value = '打卡点 ' + (activeTrip.points.length + 1);
+            document.getElementById('modal-input-cost').value = '0';
+            document.getElementById('modal-input-note').value = '无';
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
 
-        function handleSave(e) {
-            e.preventDefault();
-            const name = document.getElementById('loc-name').value;
-            const category = document.getElementById('loc-category').value;
-            const amount = parseFloat(document.getElementById('loc-amount').value);
-            const note = document.getElementById('loc-note').value;
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+            pendingPointData = null;
+        }
 
-            // 默认取当前地图中心点作为经纬度
-            const center = map.getCenter();
+        document.getElementById('modal-btn-confirm').onclick = function() {
+            if (!pendingPointData) return;
+            const name = document.getElementById('modal-input-name').value || '打卡点';
+            const cost = parseFloat(document.getElementById('modal-input-cost').value || 0);
+            const note = document.getElementById('modal-input-note').value || '无';
 
-            records.push({
-                id: Date.now(),
-                name, category, amount, note,
-                lat: center.lat + (Math.random() - 0.5) * 0.01,
-                lng: center.lng + (Math.random() - 0.5) * 0.01,
-                date: new Date().toISOString().split('T')[0]
+            activeTrip.points.push({
+                lat: pendingPointData.lat,
+                lng: pendingPointData.lng,
+                name, cost,
+                type: currentCategory,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                note
             });
 
+            saveActiveTrip();
+            updateTripUI();
             closeModal();
-            document.getElementById('record-form').reset();
-            render();
+        };
+
+        function saveActiveTrip() {
+            localStorage.setItem('active_trip', JSON.stringify(activeTrip));
         }
 
-        render();
+        function updateTripUI() {
+            const statusEl = document.getElementById('trip-status-indicator');
+            const toggleBtn = document.getElementById('btn-toggle-trip');
+
+            if (activeTrip.isTravelling) {
+                statusEl.innerHTML = '<span class="text-red-500 font-bold animate-pulse">🔴 进行中...</span>';
+                toggleBtn.innerText = '🏁 结束';
+                toggleBtn.className = 'px-3.5 py-1.5 bg-red-600 active:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md transition';
+            } else {
+                statusEl.innerHTML = '⚪ 浏览模式';
+                toggleBtn.innerText = '🚀 开始旅行';
+                toggleBtn.className = 'px-3.5 py-1.5 bg-blue-600 active:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition';
+            }
+
+            const targetTrip = previewTrip || activeTrip;
+            drawTripMap(targetTrip);
+            renderStatsPanel(targetTrip);
+        }
+
+        function drawTripMap(trip) {
+            if (!map) return;
+            markersLayer.clearLayers();
+            if (redPolyline) map.removeLayer(redPolyline);
+
+            const latlngs = trip.points.map(p => [p.lat, p.lng]);
+
+            if (latlngs.length > 1) {
+                redPolyline = L.polyline(latlngs, {
+                    color: '#ef4444',
+                    weight: 5,
+                    opacity: 0.85,
+                    dashArray: '8, 8'
+                }).addTo(map);
+                map.fitBounds(redPolyline.getBounds(), { padding: [40, 40] });
+            }
+
+            trip.points.forEach((p, index) => {
+                const marker = L.marker([p.lat, p.lng]).addTo(markersLayer);
+                marker.bindPopup(`
+                    <div style="font-size:12px;">
+                        <b>📍 ${index + 1}. ${p.name}</b><br>
+                        ⏰ 时间：${p.time}<br>
+                        💰 消费：<b style="color:red;">￥${p.cost.toFixed(2)}</b> (${p.type})<br>
+                        📝 备注：${p.note}
+                    </div>
+                `);
+            });
+        }
+
+        function renderStatsPanel(trip) {
+            const total = trip.points.reduce((sum, p) => sum + p.cost, 0);
+            document.getElementById('trip-total-cost').innerText = `￥${total.toFixed(2)}`;
+            
+            const isPreview = previewTrip !== null;
+            document.getElementById('panel-title-tag').innerText = isPreview ? "👀 归档预览" : "本次行程累计花费";
+            document.getElementById('trip-meta').innerText = `站点: ${trip.points.length} | 状态: ${trip.startTime ? '已开启' : '未开启'}`;
+
+            const listEl = document.getElementById('trip-nodes-list');
+            if (trip.points.length === 0) {
+                listEl.innerHTML = `<div class="text-gray-400 text-center py-2 text-[11px]">暂无打卡记录</div>`;
+                return;
+            }
+
+            listEl.innerHTML = trip.points.map((p, i) => `
+                <div onclick="focusPoint(${p.lat}, ${p.lng})" class="p-1.5 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center cursor-pointer hover:bg-blue-50">
+                    <div>
+                        <div class="font-bold text-gray-800 text-[11px]">${i + 1}. ${p.name}</div>
+                        <div class="text-[9px] text-gray-400">${p.type} | ${p.note}</div>
+                    </div>
+                    <div class="font-extrabold text-red-500 text-[11px]">￥${p.cost.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function focusPoint(lat, lng) {
+            map.panTo([lat, lng]);
+        }
+
+        function renderArchivedTrips() {
+            const listEl = document.getElementById('archived-trips-list');
+            if (archivedTrips.length === 0) {
+                listEl.innerHTML = `<div class="text-gray-400 text-xs">暂无历史归档行程</div>`;
+                return;
+            }
+
+            listEl.innerHTML = archivedTrips.map((t, idx) => {
+                const cost = t.points.reduce((s, p) => s + p.cost, 0);
+                return `
+                    <div class="p-2 bg-gray-50 rounded-xl flex justify-between items-center border border-gray-100">
+                        <div onclick="previewArchivedTrip(${idx})" class="cursor-pointer flex-1">
+                            <span class="font-bold text-gray-700 text-xs">🗓️ ${t.startTime.split(' ')[0]}</span> 
+                            <span class="text-gray-400 text-[10px]">(${t.points.length}站点)</span>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-red-500 font-extrabold text-xs">￥${cost.toFixed(2)}</span>
+                            <button onclick="previewArchivedTrip(${idx})" class="px-2 py-0.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[10px] font-semibold">查看</button>
+                            <button onclick="restoreTrip(${idx})" class="px-2 py-0.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold">恢复</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function previewArchivedTrip(idx) {
+            previewTrip = archivedTrips[idx];
+            updateTripUI();
+        }
+
+        function restoreTrip(idx) {
+            if (confirm('确定要恢复该历史行程并继续记录吗？')) {
+                activeTrip = archivedTrips.splice(idx, 1)[0];
+                activeTrip.isTravelling = true;
+                previewTrip = null;
+                localStorage.setItem('archived_trips', JSON.stringify(archivedTrips));
+                saveActiveTrip();
+                updateTripUI();
+                renderArchivedTrips();
+                alert('行程已恢复为当前激活状态！');
+            }
+        }
+
+        initDateSelectors();
+        renderDailyList();
+        renderMonthlyBill();
     </script>
 </body>
 </html>
