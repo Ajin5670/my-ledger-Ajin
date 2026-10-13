@@ -201,8 +201,9 @@
             const monthSelect = document.getElementById('filter-month');
             const currentYear = new Date().getFullYear();
             
+            // 💡 动态扩展年份：从 2020 年一直到未来 10 年
             let yearsHTML = '';
-            for (let y = currentYear - 2; y <= currentYear + 2; y++) {
+            for (let y = 2020; y <= currentYear + 10; y++) {
                 yearsHTML += `<option value="${y}">${y}年</option>`;
             }
             yearSelect.innerHTML = yearsHTML;
@@ -339,14 +340,14 @@
         }
 
         function initMap() {
-            // 💡 关键修复：启用 Retina 高清屏自适应支持 (detectRetina: true)
             map = L.map('map', { doubleClickZoom: false, zoomControl: false, detectRetina: true }).setView([30.5728, 104.0668], 12);
             
-            // 💡 关键修复：高德高清瓦片 (scale=2 参数)
             L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=7&x={x}&y={y}&z={z}', {
                 attribution: '&copy; 高德地图',
                 tileSize: 256,
-                zoomOffset: 0
+                zoomOffset: 0,
+                maxZoom: 18,
+                minZoom: 3
             }).addTo(map);
 
             markersLayer = L.layerGroup().addTo(map);
