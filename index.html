@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ajin 智能记账 & 智能足迹</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/wallet.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .pulse-marker {
+            width: 16px; height: 16px; background-color: #2563eb; border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 flex flex-col h-screen overflow-hidden">
+
+    <header class="bg-white border-b border-gray-200 px-4 py-3 text-center font-bold text-lg shadow-sm">
+        ✨ Ajin 智能记账 & 智能足迹
+    </header>
+
+    <main class="flex-1 overflow-y-auto pb-16">
+        <!-- 日常记账 Tab -->
+        <div id="tab-daily" class="p-4 space-y-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">消费金额</label>
+                <div class="flex items-center space-x-2">
+                    <span class="text-3xl font-bold text-gray-400">￥</span>
+                    <input type="number" id="daily-amount" placeholder="0.00" class="w-full text-3xl font-bold focus:outline-none text-blue-600">
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">分类选择</label>
+                <div class="grid grid-cols-3 gap-2" id="category-grid">
+                    <button onclick="selectCategory('🍔 餐饮')" class="cat-btn py-2.5 rounded-xl border border-blue-500 bg-blue-50 text-blue-600 font-medium text-sm">🍔 餐饮</button>
+                    <button onclick="selectCategory('🚗 交通')" class="cat-btn py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 font-medium text-sm">🚗 交通</button>
+                    <button onclick="selectCategory('🛍️ 购物')" class="cat-btn py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 font-medium text-sm">🛍️ 购物</button>
+                    <button onclick="selectCategory('🎫 门票')" class="cat-btn py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 font-medium text-sm">🎫 门票</button>
+                    <button onclick="selectCategory('🏨 住宿')" class="cat-btn py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 font-medium text-sm">🏨 住宿</button>
+                    <button onclick="selectCategory('📦 其他')" class="cat-btn py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 font-medium text-sm">📦 其他</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">备注说明</label>
+                <input type="text" id="daily-note" placeholder="添加备注..." class="w-full focus:outline-none text-base">
+            </div>
+
+            <button onclick="saveDaily()" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-blue-500/30 active:scale-95 transition">
+                保存记账
+            </button>
+
+            <div class="mt-6">
+                <h3 class="font-bold text-sm text-gray-500 mb-3">最近账单</h3>
+                <div id="daily-list" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- 旅行足迹 Tab -->
+        <div id="tab-travel" class="hidden h-full relative flex flex-col">
+            <!-- 顶部状态与控制栏 -->
+            <div class="p-3 bg-white/90 backdrop-blur-md z-10 border-b border-gray-200 shadow-xs flex justify-between items-center">
+                <div id="trip-status-indicator" class="text-sm font-semibold text-gray-500">
+                    ⚪ 浏览模式（双击定位起点，点击右上角开始旅行）
+                </div>
+                <div class="flex space-x-2">
+                    <button id="btn-locate" onclick="locateMe()" class="px-3 py-1.5 bg-gray-100 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-200">
+                        🎯 手机定位
+                    </button>
+                    <button id="btn-toggle-trip" onclick="toggleTripState()" class="px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md">
+                        🚀 开始新旅行
+                    </button>
+                </div>
+            </div>
+
+            <!-- 地图画布 -->
+            <div id="map" class="flex-1 w-full relative z-0"></div>
+
+            <!-- 左上角浮动行程总览面板 -->
+            <div id="travel-stats-panel" class="absolute top-16 left-3 z-10 w-64 bg-white/90 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-gray-100 max-h-[45vh] flex flex-col">
+                <div class="border-b border-gray-200 pb-2 mb-2 flex justify-between items-start">
+                    <div>
+                        <div id="panel-title-tag" class="text-xs text-gray-400 font-semibold">本次行程累计花费</div>
+                        <div id="trip-total-cost" class="text-2xl font-black text-red-500">￥0.00</div>
+                        <div id="trip-meta" class="text-xs text-gray-500 mt-1">站点: 0 | 状态: 未开始</div>
+                    </div>
+                </div>
+                <div id="trip-nodes-list" class="flex-1 overflow-y-auto space-y-2 text-xs">
+                    <div class="text-gray-400 text-center py-4">未开启旅行或查看归档中...</div>
+                </div>
+            </div>
+
+            <!-- 历史行程归档列表浮层 -->
+            <div class="bg-white p-3 border-t border-gray-200 max-h-40 overflow-y-auto z-10">
+                <div class="text-xs font-bold text-gray-500 mb-2">📜 归档历史行程（点击可直接在地图预览）</div>
+                <div id="archived-trips-list" class="space-y-1.5 text-xs"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部导航栏 -->
+    <nav class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 flex justify-around py-2.5 z-20">
+        <button onclick="switchTab('daily')" id="nav-daily" class="flex flex-col items-center text-blue-600 font-semibold text-xs">
+            <span class="text-lg">💰</span>日常记账
+        </button>
+        <button onclick="switchTab('travel')" id="nav-travel" class="flex flex-col items-center text-gray-400 font-semibold text-xs">
+            <span class="text-lg">🗺️</span>旅行足迹
+        </button>
+    </nav>
+
+    <script>
+        let currentCategory = '🍔 餐饮';
+        let dailyRecords = JSON.parse(localStorage.getItem('daily_records')) || [];
+        let archivedTrips = JSON.parse(localStorage.getItem('archived_trips')) || [];
+        
+        let activeTrip = JSON.parse(localStorage.getItem('active_trip')) || {
+            isTravelling: false,
+            startTime: null,
+            points: []
+        };
+
+        let map, markersLayer, redPolyline, myLocationMarker, startLocationMarker;
+        let previewTrip = null; // 用于预览归档行程
+
+        function selectCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = btn.innerText.includes(cat) 
+                    ? "cat-btn py-2.5 rounded-xl border border-blue-500 bg-blue-50 text-blue-600 font-medium text-sm"
+                    : "cat-btn py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 font-medium text-sm";
+            });
+        }
+
+        function switchTab(tab) {
+            if (tab === 'daily') {
+                document.getElementById('tab-daily').classList.remove('hidden');
+                document.getElementById('tab-travel').classList.add('hidden');
+                document.getElementById('nav-daily').className = "flex flex-col items-center text-blue-600 font-semibold text-xs";
+                document.getElementById('nav-travel').className = "flex flex-col items-center text-gray-400 font-semibold text-xs";
+            } else {
+                document.getElementById('tab-daily').classList.add('hidden');
+                document.getElementById('tab-travel').classList.remove('hidden');
+                document.getElementById('nav-travel').className = "flex flex-col items-center text-blue-600 font-semibold text-xs";
+                document.getElementById('nav-daily').className = "flex flex-col items-center text-gray-400 font-semibold text-xs";
+                setTimeout(() => {
+                    if (!map) initMap();
+                    else map.invalidateSize();
+                }, 100);
+            }
+        }
+
+        function saveDaily() {
+            const amount = document.getElementById('daily-amount').value;
+            const note = document.getElementById('daily-note').value;
+            if (!amount) return alert('请输入金额！');
+
+            dailyRecords.unshift({
+                date: new Date().toLocaleString(),
+                category: currentCategory,
+                amount: parseFloat(amount).toFixed(2),
+                note: note || '无备注'
+            });
+
+            localStorage.setItem('daily_records', JSON.stringify(dailyRecords));
+            document.getElementById('daily-amount').value = '';
+            document.getElementById('daily-note').value = '';
+            renderDailyList();
+            alert('记账成功！');
+        }
+
+        function renderDailyList() {
+            document.getElementById('daily-list').innerHTML = dailyRecords.map(r => `
+                <div class="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center shadow-2xs">
+                    <div>
+                        <div class="font-bold text-sm">${r.category} <span class="text-gray-400 font-normal text-xs">(${r.date})</span></div>
+                        <div class="text-xs text-gray-500">备注: ${r.note}</div>
+                    </div>
+                    <div class="font-bold text-blue-600 text-base">￥${r.amount}</div>
+                </div>
+            `).join('');
+        }
+
+        function initMap() {
+            map = L.map('map', { doubleClickZoom: false }).setView([30.5728, 104.0668], 12);
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}', {
+                attribution: '&copy; 高德地图'
+            }).addTo(map);
+
+            markersLayer = L.layerGroup().addTo(map);
+
+            // 单击：仅在旅行进行中时添加打卡点
+            map.on('click', function(e) {
+                if (activeTrip.isTravelling) {
+                    addTripPoint(e.latlng.lat, e.latlng.lng);
+                }
+            });
+
+            // 双击：在浏览模式下定位/设置初始起点
+            map.on('dblclick', function(e) {
+                if (!activeTrip.isTravelling) {
+                    if (startLocationMarker) map.removeLayer(startLocationMarker);
+                    startLocationMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map)
+                        .bindPopup("<b>📍 拟定出发起点</b><br>点击右上角【🚀 开始新旅行】即可开启行程！").openPopup();
+                }
+            });
+
+            updateTripUI();
+            renderArchivedTrips();
+        }
+
+        function locateMe() {
+            if (!navigator.geolocation) return alert('您的浏览器不支持定位功能');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                map.setView([lat, lng], 15);
+
+                if (myLocationMarker) map.removeLayer(myLocationMarker);
+                const pulseIcon = L.divIcon({ className: 'pulse-marker', iconSize: [16, 16] });
+                myLocationMarker = L.marker([lat, lng], { icon: pulseIcon }).addTo(map).bindPopup('<b>🎯 当前定位位置</b>').openPopup();
+            }, () => alert('获取定位失败，请允许浏览器定位权限。'));
+        }
+
+        function toggleTripState() {
+            previewTrip = null; // 清除预览模式
+            if (!activeTrip.isTravelling) {
+                activeTrip = {
+                    isTravelling: true,
+                    startTime: new Date().toLocaleString(),
+                    points: []
+                };
+
+                // 如果之前双击标出了起点，自动将其加入打卡列表
+                if (startLocationMarker) {
+                    const latlng = startLocationMarker.getLatLng();
+                    activeTrip.points.push({
+                        lat: latlng.lat, lng: latlng.lng, name: "行程起点", cost: 0,
+                        type: "📍 起点", time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), note: "出发地"
+                    });
+                    map.removeLayer(startLocationMarker);
+                    startLocationMarker = null;
+                }
+
+                alert('🚀 新旅行已正式开始！点击地图任意位置即可添加打卡点与消费！');
+            } else {
+                if (confirm('确认结束本次旅行吗？行程将存入历史归档！')) {
+                    activeTrip.isTravelling = false;
+                    activeTrip.endTime = new Date().toLocaleString();
+                    archivedTrips.unshift({...activeTrip});
+                    localStorage.setItem('archived_trips', JSON.stringify(archivedTrips));
+                    activeTrip.points = [];
+                    alert('🏁 本次旅行已归档保存！');
+                }
+            }
+            saveActiveTrip();
+            updateTripUI();
+            renderArchivedTrips();
+        }
+
+        function addTripPoint(lat, lng) {
+            const name = prompt("请输入打卡地点/景点名称：", "打卡点");
+            if (!name) return;
+            const cost = prompt("请输入此处的消费金额（元）：", "0");
+            if (cost === null) return;
+            const note = prompt("请输入备注说明（可选）：", "无");
+
+            activeTrip.points.push({
+                lat, lng, name,
+                cost: parseFloat(cost || 0),
+                type: currentCategory,
+                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                note: note || '无'
+            });
+
+            saveActiveTrip();
+            updateTripUI();
+        }
+
+        function saveActiveTrip() {
+            localStorage.setItem('active_trip', JSON.stringify(activeTrip));
+        }
+
+        function updateTripUI() {
+            const statusEl = document.getElementById('trip-status-indicator');
+            const toggleBtn = document.getElementById('btn-toggle-trip');
+
+            if (activeTrip.isTravelling) {
+                statusEl.innerHTML = '<span class="text-red-500 font-bold animate-pulse">🔴 旅行进行中...（点击地图添加打卡点）</span>';
+                toggleBtn.innerText = '🏁 结束本次旅行';
+                toggleBtn.className = 'px-3 py-1.5 bg-red-600 text-white rounded-xl text-xs font-bold shadow-md';
+            } else {
+                statusEl.innerHTML = '⚪ 浏览模式（双击地图定位起点，点击右上角开始旅行）';
+                toggleBtn.innerText = '🚀 开始新旅行';
+                toggleBtn.className = 'px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md';
+            }
+
+            const targetTrip = previewTrip || activeTrip;
+            drawTripMap(targetTrip);
+            renderStatsPanel(targetTrip);
+        }
+
+        function drawTripMap(trip) {
+            if (!map) return;
+            markersLayer.clearLayers();
+            if (redPolyline) map.removeLayer(redPolyline);
+
+            const latlngs = trip.points.map(p => [p.lat, p.lng]);
+
+            if (latlngs.length > 1) {
+                redPolyline = L.polyline(latlngs, {
+                    color: '#ef4444',
+                    weight: 5,
+                    opacity: 0.85,
+                    dashArray: '8, 8'
+                }).addTo(map);
+                map.fitBounds(redPolyline.getBounds(), { padding: [30, 30] });
+            }
+
+            trip.points.forEach((p, index) => {
+                const marker = L.marker([p.lat, p.lng]).addTo(markersLayer);
+                marker.bindPopup(`
+                    <div style="font-size:12px;">
+                        <b>📍 ${index + 1}. ${p.name}</b><br>
+                        ⏰ 时间：${p.time}<br>
+                        💰 消费：<b style="color:red;">￥${p.cost.toFixed(2)}</b> (${p.type})<br>
+                        📝 备注：${p.note}
+                    </div>
+                `);
+            });
+        }
+
+        function renderStatsPanel(trip) {
+            const total = trip.points.reduce((sum, p) => sum + p.cost, 0);
+            document.getElementById('trip-total-cost').innerText = `￥${total.toFixed(2)}`;
+            
+            const isPreview = previewTrip !== null;
+            document.getElementById('panel-title-tag').innerText = isPreview ? "👀 归档行程预览（累计花费）" : "本次行程累计花费";
+            document.getElementById('trip-meta').innerText = `站点: ${trip.points.length} | 起始: ${trip.startTime || '未开启'}`;
+
+            const listEl = document.getElementById('trip-nodes-list');
+            if (trip.points.length === 0) {
+                listEl.innerHTML = `<div class="text-gray-400 text-center py-4">未开启旅行或查看归档中...</div>`;
+                return;
+            }
+
+            listEl.innerHTML = trip.points.map((p, i) => `
+                <div onclick="focusPoint(${p.lat}, ${p.lng})" class="p-2 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-center cursor-pointer hover:bg-blue-50">
+                    <div>
+                        <div class="font-bold">${i + 1}. ${p.name} <span class="text-gray-400 font-normal">(${p.time})</span></div>
+                        <div class="text-gray-400">${p.type} | ${p.note}</div>
+                    </div>
+                    <div class="font-bold text-red-500">￥${p.cost.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function focusPoint(lat, lng) {
+            map.panTo([lat, lng]);
+        }
+
+        function renderArchivedTrips() {
+            const listEl = document.getElementById('archived-trips-list');
+            if (archivedTrips.length === 0) {
+                listEl.innerHTML = `<div class="text-gray-400">暂无历史归档行程</div>`;
+                return;
+            }
+
+            listEl.innerHTML = archivedTrips.map((t, idx) => {
+                const cost = t.points.reduce((s, p) => s + p.cost, 0);
+                return `
+                    <div class="p-2 bg-gray-50 rounded-lg flex justify-between items-center border border-gray-100">
+                        <div onclick="previewArchivedTrip(${idx})" class="cursor-pointer flex-1">
+                            <b>🗓️ ${t.startTime.split(' ')[0]} 行程</b> (${t.points.length}站点 | <span class="text-red-500 font-bold">￥${cost.toFixed(2)}</span>)
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="previewArchivedTrip(${idx})" class="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs">
+                                👁️ 查看
+                            </button>
+                            <button onclick="restoreTrip(${idx})" class="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-bold">
+                                ▶️ 恢复
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function previewArchivedTrip(idx) {
+            previewTrip = archivedTrips[idx];
+            updateTripUI();
+        }
+
+        function restoreTrip(idx) {
+            if (confirm('确定要恢复该历史行程并继续编辑记录吗？')) {
+                activeTrip = archivedTrips.splice(idx, 1)[0];
+                activeTrip.isTravelling = true;
+                previewTrip = null;
+                localStorage.setItem('archived_trips', JSON.stringify(archivedTrips));
+                saveActiveTrip();
+                updateTripUI();
+                renderArchivedTrips();
+                alert('行程已恢复为当前激活状态！');
+            }
+        }
+
+        renderDailyList();
+    </script>
+</body>
+</html>
