@@ -6,7 +6,7 @@
     <title>Ajin 智能记账 & 智能足迹</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/wallet.png">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/wallet--v1.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,14 +23,8 @@
             padding-top: var(--sat);
             padding-bottom: var(--sab);
         }
-        /* 安全区适配 Header */
-        .safe-header {
-            padding-top: max(12px, var(--sat));
-        }
-        /* 安全区适配 Footer */
-        .safe-nav {
-            padding-bottom: max(10px, var(--sab));
-        }
+        .safe-header { padding-top: max(12px, var(--sat)); }
+        .safe-nav { padding-bottom: max(10px, var(--sab)); }
         .pulse-marker {
             width: 18px; height: 18px; background-color: #3b82f6; border-radius: 50%;
             box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); animation: pulse 1.6s infinite;
@@ -45,12 +39,10 @@
 </head>
 <body class="text-gray-800 flex flex-col h-screen overflow-hidden">
 
-    <!-- 适配 iOS 刘海/灵动岛的 Safe Header -->
     <header class="safe-header bg-white border-b border-gray-100 px-4 pb-3 text-center font-bold text-base shadow-2xs z-30 flex-none">
         ✨ Ajin 智能记账 & 智能足迹
     </header>
 
-    <!-- 主体区域 -->
     <main class="flex-1 relative overflow-hidden">
         
         <!-- Tab 1: 日常记账 -->
@@ -106,14 +98,13 @@
             </div>
 
             <div class="mt-4">
-                <h3 class="font-bold text-sm text-gray-500 mb-3 px-1">最近流水</h3>
+                <h3 class="font-bold text-sm text-gray-500 mb-3 px-1">最近流水记录</h3>
                 <div id="daily-list" class="space-y-2"></div>
             </div>
         </div>
 
         <!-- Tab 2: 旅行足迹 -->
         <div id="tab-travel" class="hidden h-full w-full relative">
-            <!-- 顶栏浮动控制卡片 -->
             <div class="absolute top-3 left-3 right-3 z-20 flex flex-col gap-2 pointer-events-none">
                 <div class="bg-white/95 backdrop-blur-md p-2.5 rounded-2xl shadow-lg border border-gray-100 flex justify-between items-center pointer-events-auto">
                     <div id="trip-status-indicator" class="text-xs font-semibold text-gray-600 truncate max-w-[170px]">
@@ -129,7 +120,6 @@
                     </div>
                 </div>
 
-                <!-- 左上角总揽卡片 -->
                 <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-gray-100 w-60 max-h-[35vh] flex flex-col pointer-events-auto">
                     <div class="border-b border-gray-100 pb-1.5 mb-1.5">
                         <div id="panel-title-tag" class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">本次行程累计花费</div>
@@ -142,11 +132,9 @@
                 </div>
             </div>
 
-            <!-- 地图画布 -->
             <div id="map" class="w-full h-full z-0"></div>
 
-            <!-- 底部归档卡片悬浮层 -->
-            <div class="absolute bottom-16 left-3 right-3 z-20 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-gray-100 max-h-32 overflow-y-auto shadow-xl">
+            <div class="absolute bottom-16 left-3 right-3 z-20 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-gray-100 max-h-36 overflow-y-auto shadow-xl">
                 <div class="text-xs font-bold text-gray-600 mb-1.5 flex items-center justify-between">
                     <span>📜 归档历史行程</span>
                     <span class="text-[10px] text-gray-400 font-normal">点击预览轨迹</span>
@@ -156,7 +144,6 @@
         </div>
     </main>
 
-    <!-- 底部固定导航栏（安全区适配 + 高 z-index 置顶） -->
     <nav class="safe-nav fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 flex justify-around py-2 z-50 shadow-2xl">
         <button onclick="switchTab('daily')" id="nav-daily" class="flex flex-col items-center text-blue-600 font-bold text-xs">
             <span class="text-base mb-0.5">💰</span>日常记账
@@ -259,6 +246,7 @@
             if (!amount) return alert('请输入金额！');
 
             dailyRecords.unshift({
+                id: Date.now(),
                 date: new Date().toISOString(),
                 displayDate: new Date().toLocaleString(),
                 category: currentCategory,
@@ -274,14 +262,32 @@
             alert('记账成功！');
         }
 
+        function deleteDailyRecord(id) {
+            if (confirm('确定要删除这条日常记账记录吗？')) {
+                dailyRecords = dailyRecords.filter(r => r.id !== id);
+                localStorage.setItem('daily_records', JSON.stringify(dailyRecords));
+                renderDailyList();
+                renderMonthlyBill();
+            }
+        }
+
         function renderDailyList() {
-            document.getElementById('daily-list').innerHTML = dailyRecords.slice(0, 15).map(r => `
+            const listEl = document.getElementById('daily-list');
+            if (dailyRecords.length === 0) {
+                listEl.innerHTML = `<div class="text-gray-400 text-center py-4 text-xs">暂无日常记账流水</div>`;
+                return;
+            }
+
+            listEl.innerHTML = dailyRecords.map(r => `
                 <div class="bg-white p-3.5 rounded-2xl border border-gray-100 flex justify-between items-center shadow-2xs">
                     <div>
                         <div class="font-bold text-sm text-gray-800">${r.category} <span class="text-gray-400 font-normal text-xs">(${r.displayDate || r.date})</span></div>
                         <div class="text-xs text-gray-500 mt-0.5">备注: ${r.note}</div>
                     </div>
-                    <div class="font-extrabold text-blue-600 text-base">￥${r.amount}</div>
+                    <div class="flex items-center space-x-3">
+                        <div class="font-extrabold text-blue-600 text-base">￥${r.amount}</div>
+                        <button onclick="deleteDailyRecord(${r.id})" class="text-gray-300 hover:text-red-500 text-sm font-bold px-1.5 py-1">🗑️</button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -333,10 +339,11 @@
         }
 
         function initMap() {
-            // 地图 Retinal 高清像素配置
-            map = L.map('map', { doubleClickZoom: false, zoomControl: false }).setView([30.5728, 104.0668], 12);
+            // 💡 关键修复：启用 Retina 高清屏自适应支持 (detectRetina: true)
+            map = L.map('map', { doubleClickZoom: false, zoomControl: false, detectRetina: true }).setView([30.5728, 104.0668], 12);
             
-            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}', {
+            // 💡 关键修复：高德高清瓦片 (scale=2 参数)
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=7&x={x}&y={y}&z={z}', {
                 attribution: '&copy; 高德地图',
                 tileSize: 256,
                 zoomOffset: 0
@@ -525,6 +532,18 @@
             map.panTo([lat, lng]);
         }
 
+        function deleteArchivedTrip(idx) {
+            if (confirm('确定要永久删除该历史归档行程吗？')) {
+                if (previewTrip === archivedTrips[idx]) {
+                    previewTrip = null;
+                }
+                archivedTrips.splice(idx, 1);
+                localStorage.setItem('archived_trips', JSON.stringify(archivedTrips));
+                updateTripUI();
+                renderArchivedTrips();
+            }
+        }
+
         function renderArchivedTrips() {
             const listEl = document.getElementById('archived-trips-list');
             if (archivedTrips.length === 0) {
@@ -540,10 +559,11 @@
                             <span class="font-bold text-gray-700 text-xs">🗓️ ${t.startTime.split(' ')[0]}</span> 
                             <span class="text-gray-400 text-[10px]">(${t.points.length}站点)</span>
                         </div>
-                        <div class="flex items-center space-x-1.5">
+                        <div class="flex items-center space-x-1">
                             <span class="text-red-500 font-extrabold text-xs">￥${cost.toFixed(2)}</span>
                             <button onclick="previewArchivedTrip(${idx})" class="px-2 py-0.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-[10px] font-semibold">查看</button>
                             <button onclick="restoreTrip(${idx})" class="px-2 py-0.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold">恢复</button>
+                            <button onclick="deleteArchivedTrip(${idx})" class="text-gray-300 hover:text-red-500 font-bold px-1 text-xs">🗑️</button>
                         </div>
                     </div>
                 `;
