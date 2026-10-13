@@ -4,9 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ajin 智能记账 & 智能足迹</title>
+    
+    <!-- 💡 1. 网页标签页小图标 (Favicon) -->
+    <link rel="icon" type="image/jpeg" href="icon.jpeg">
+
+    <!-- 💡 2. 苹果手机添加到桌面后的高清 App 图标 -->
+    <link rel="apple-touch-icon" href="icon.jpeg">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/wallet--v1.png">
+    <meta name="apple-mobile-web-app-title" content="Ajin记账足迹">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -25,6 +31,15 @@
         }
         .safe-header { padding-top: max(12px, var(--sat)); }
         .safe-nav { padding-bottom: max(10px, var(--sab)); }
+        
+        .leaflet-container {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            -webkit-font-smoothing: antialiased !important;
+        }
+        .leaflet-tile {
+            image-rendering: -webkit-optimize-contrast;
+        }
+
         .pulse-marker {
             width: 18px; height: 18px; background-color: #3b82f6; border-radius: 50%;
             box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); animation: pulse 1.6s infinite;
@@ -201,7 +216,6 @@
             const monthSelect = document.getElementById('filter-month');
             const currentYear = new Date().getFullYear();
             
-            // 💡 动态扩展年份：从 2020 年一直到未来 10 年
             let yearsHTML = '';
             for (let y = 2020; y <= currentYear + 10; y++) {
                 yearsHTML += `<option value="${y}">${y}年</option>`;
@@ -342,10 +356,8 @@
         function initMap() {
             map = L.map('map', { doubleClickZoom: false, zoomControl: false, detectRetina: true }).setView([30.5728, 104.0668], 12);
             
-            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=2&style=7&x={x}&y={y}&z={z}', {
+            L.tileLayer('https://webrd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}', {
                 attribution: '&copy; 高德地图',
-                tileSize: 256,
-                zoomOffset: 0,
                 maxZoom: 18,
                 minZoom: 3
             }).addTo(map);
