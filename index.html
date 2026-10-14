@@ -30,6 +30,9 @@
 
         :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--app-bg); color: var(--text-primary); padding-bottom: var(--sab); transition: background-color 0.3s, color 0.3s; }
+        
+        .safe-header { padding-top: max(8px, var(--sat)); }
+        .safe-travel-top { top: max(12px, calc(var(--sat) + 6px)); }
         .safe-nav { padding-bottom: max(10px, var(--sab)); }
         
         .cute-title-font { font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', 'PingFang SC', cursive, sans-serif; letter-spacing: 0.5px; }
@@ -51,8 +54,8 @@
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-    <!-- 顶部导航：精简多余空白，更加紧凑贴顶 -->
-    <header id="app-header" class="theme-card-bg border-b px-4 py-2.5 flex justify-between items-center z-30 flex-none shadow-xs">
+    <!-- 顶部导航 -->
+    <header id="app-header" class="safe-header theme-card-bg border-b px-4 pb-2.5 flex justify-between items-center z-30 flex-none shadow-xs">
         <button onclick="openThemeModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full theme-card-bg border text-xs font-semibold theme-text-main shadow-2xs active:scale-95 transition">
             <span>🎨</span> <span id="currentThemeTitle">柔白</span>
         </button>
@@ -155,10 +158,10 @@
         <!-- Tab 2: 旅行足迹 -->
         <div id="tab-travel" class="hidden h-full w-full relative">
             
-            <!-- 顶端一体化气泡控制栏 -->
-            <div class="absolute top-2.5 left-2.5 right-2.5 z-20 flex flex-col gap-2 pointer-events-none">
+            <!-- 顶端一体化气泡控制栏：采用玻璃毛玻璃透明质感 -->
+            <div class="absolute safe-travel-top left-2.5 right-2.5 z-20 flex flex-col gap-2 pointer-events-none">
                 
-                <div class="theme-card-bg backdrop-blur-md rounded-2xl p-2.5 shadow-xl border flex items-center justify-between gap-3 pointer-events-auto">
+                <div class="rounded-2xl p-2.5 shadow-xl border flex items-center justify-between gap-3 pointer-events-auto" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
                     <div class="flex items-center space-x-2.5 overflow-hidden">
                         <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0" style="background-color: var(--accent-color);">
                             📍
@@ -166,14 +169,14 @@
                         <div class="truncate">
                             <div class="flex items-center gap-1.5">
                                 <span id="panel-title-tag" class="font-bold text-xs theme-text-main cute-title-font truncate">本次行程</span>
-                                <span id="trip-status-indicator" class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-gray-100 theme-text-sub">⚪ 浏览</span>
+                                <span id="trip-status-indicator" class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-gray-100/80 theme-text-sub">⚪ 浏览</span>
                             </div>
                             <div class="text-xs font-black text-red-500 mt-0.5"><span id="trip-total-cost">￥0.00</span> <span id="trip-meta" class="text-[9px] theme-text-sub font-normal ml-1">| 0 站点</span></div>
                         </div>
                     </div>
 
                     <div class="flex items-center gap-1.5 shrink-0">
-                        <button onclick="locateMe()" class="px-2 py-1.5 rounded-xl border text-xs font-semibold theme-text-main shadow-2xs active:scale-95 transition flex items-center gap-1 theme-card-bg">
+                        <button onclick="locateMe()" class="px-2 py-1.5 rounded-xl border text-xs font-semibold theme-text-main shadow-2xs active:scale-95 transition flex items-center gap-1" style="background-color: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-color: rgba(255,255,255,0.5);">
                             🎯 定位
                         </button>
                         <button id="btn-toggle-trip" onclick="toggleTripState()" class="px-3 py-1.5 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center gap-1" style="background-color: var(--accent-color);">
@@ -182,28 +185,29 @@
                     </div>
                 </div>
 
-                <!-- 搜索栏折叠岛 -->
+                <!-- 搜索栏折叠岛（玻璃透明效果） -->
                 <div class="flex justify-between items-center pointer-events-auto">
                     <div class="relative w-full max-w-xs">
-                        <div id="expand-search-box" class="hidden absolute top-0 left-0 w-full theme-card-bg backdrop-blur-md rounded-2xl shadow-xl border p-1 flex items-center gap-1 z-30">
+                        <div id="expand-search-box" class="hidden absolute top-0 left-0 w-full rounded-2xl shadow-xl border p-1 flex items-center gap-1 z-30" style="background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
                             <input type="text" id="map-search-input" placeholder="搜美食/景点(回车)..." onkeydown="handleMapSearch(event)" class="w-full bg-transparent text-xs px-2.5 py-1.5 focus:outline-none theme-text-main">
                             <button onclick="toggleSearchBox()" class="text-xs text-gray-400 font-bold px-2">✕</button>
                         </div>
-                        <button onclick="toggleSearchBox()" class="theme-card-bg backdrop-blur-md px-3 py-1.5 rounded-xl shadow border text-xs font-semibold theme-text-main flex items-center gap-1.5 active:scale-95 transition">
+                        <button onclick="toggleSearchBox()" class="px-3 py-1.5 rounded-xl shadow border text-xs font-semibold theme-text-main flex items-center gap-1.5 active:scale-95 transition" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
                             <span>🔍</span> <span>搜索附近地点...</span>
                         </button>
                     </div>
                 </div>
 
-                <div id="trip-nodes-container" class="hidden theme-card-bg backdrop-blur-md rounded-2xl p-2 shadow-lg border max-h-24 overflow-y-auto space-y-1 pointer-events-auto">
-                    <div id="trip-nodes-list" class="space-y-1 text-[11px]"></div>
+                <!-- 苹果毛玻璃透光打卡点列表（左侧对齐、通透磨砂） -->
+                <div id="trip-nodes-container" class="hidden rounded-2xl p-1 shadow-lg border max-h-36 overflow-y-auto space-y-0.5 pointer-events-auto w-64 self-start" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
+                    <div id="trip-nodes-list" class="divide-y divide-gray-200/50 text-xs"></div>
                 </div>
 
             </div>
 
             <div id="map" class="w-full h-full z-0"></div>
 
-            <div class="absolute bottom-14 left-3 right-3 z-20 theme-card-bg backdrop-blur-md p-2.5 rounded-2xl border max-h-28 overflow-y-auto shadow-xl">
+            <div class="absolute bottom-14 left-3 right-3 z-20 p-2.5 rounded-2xl border max-h-28 overflow-y-auto shadow-xl" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
                 <div class="text-xs font-bold theme-text-main mb-1 flex items-center justify-between cute-title-font">
                     <span>📜 归档历史行程</span>
                     <span class="text-[10px] theme-text-sub font-normal">点击【查看】定位并缩放</span>
@@ -213,7 +217,7 @@
         </div>
     </main>
 
-    <nav class="safe-nav fixed bottom-0 left-0 right-0 theme-card-bg backdrop-blur-md border-t flex justify-around py-2 z-50 shadow-2xl">
+    <nav class="safe-nav fixed bottom-0 left-0 right-0 border-t flex justify-around py-2 z-50 shadow-2xl" style="background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
         <button onclick="switchTab('daily')" id="nav-daily" class="flex flex-col items-center font-bold text-xs cute-title-font" style="color: var(--accent-color);">
             <span class="text-base mb-0.5">💰</span>日常记账
         </button>
@@ -1112,12 +1116,19 @@
             }
 
             containerEl.classList.remove('hidden');
+            // 玻璃透光毛玻璃苹果风列表项渲染
             listEl.innerHTML = points.map((p, i) => `
-                <div onclick="openModal(${p.lat}, ${p.lng}, ${i})" class="p-1 rounded-lg border flex justify-between items-center cursor-pointer hover:bg-blue-50 transition" style="background-color: rgba(0,0,0,0.01);">
-                    <div class="truncate pr-1">
-                        <div class="font-bold theme-text-main text-[10px] truncate">${i + 1}. ${p.name} ✏️</div>
+                <div onclick="openModal(${p.lat}, ${p.lng}, ${i})" class="px-3 py-2 flex justify-between items-center cursor-pointer active:bg-black/5 transition">
+                    <div class="truncate pr-2">
+                        <div class="font-medium theme-text-main text-xs truncate flex items-center gap-1.5">
+                            <span class="w-4 h-4 rounded-full bg-blue-500/15 text-blue-600 font-bold text-[10px] flex items-center justify-center shrink-0">${i + 1}</span>
+                            <span class="truncate">${p.name}</span>
+                        </div>
                     </div>
-                    <div class="font-extrabold text-red-500 text-[10px] whitespace-nowrap">￥${p.cost.toFixed(2)}</div>
+                    <div class="flex items-center space-x-1.5 whitespace-nowrap">
+                        <span class="font-semibold text-red-500 text-xs">￥${p.cost.toFixed(2)}</span>
+                        <span class="text-gray-400 text-[10px]">›</span>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1161,20 +1172,20 @@
                 const dateStr = t.startTime ? t.startTime.split(' ')[0] : "--";
 
                 return `
-                    <div class="p-2 rounded-xl flex justify-between items-center border ${isCurrentViewing ? 'border-blue-500 bg-blue-50 shadow-xs' : ''}" style="background-color: rgba(0,0,0,0.01);">
+                    <div class="p-2 rounded-xl flex justify-between items-center border ${isCurrentViewing ? 'border-blue-500 bg-blue-50/80 shadow-xs' : ''}" style="background-color: rgba(255,255,255,0.4);">
                         <div onclick="previewArchivedTrip(${idx})" class="cursor-pointer flex-1 truncate pr-2">
                             <span class="font-bold text-blue-600 text-xs hover:underline" onclick="editTripName(${idx}, event)" title="点击修改行程名">🚩 ${nameStr}</span>
                             <span class="theme-text-sub text-[10px] ml-1">(${dateStr} | ${t.points.length}点)</span>
                         </div>
                         <div class="flex items-center space-x-1 whitespace-nowrap">
                             <span class="text-red-500 font-extrabold text-xs mr-1">￥${cost.toFixed(2)}</span>
-                            <button onclick="previewArchivedTrip(${idx})" class="px-2 py-0.5 border ${isCurrentViewing ? 'bg-blue-600 text-white' : 'theme-text-main'} rounded-lg text-[10px] font-semibold">
+                            <button onclick="previewArchivedTrip(${idx})" class="px-2 py-0.5 border ${isCurrentViewing ? 'bg-blue-600 text-white' : 'theme-text-main'} rounded-lg text-[10px] font-semibold" style="background-color: rgba(255,255,255,0.6);">
                                 ${isCurrentViewing ? '查看中' : '查看'}
                             </button>
                             <button onclick="restoreArchivedTrip(${idx})" class="px-2 py-0.5 text-white rounded-lg text-[10px] font-bold" style="background-color: var(--accent-color);">
                                 继续行程
                             </button>
-                            <button onclick="deleteArchivedTrip(${idx})" class="text-gray-300 hover:text-red-500 font-bold px-1 text-xs">🗑️</button>
+                            <button onclick="deleteArchivedTrip(${idx})" class="text-gray-400 hover:text-red-500 font-bold px-1 text-xs">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -1207,7 +1218,6 @@
             }
         }
 
-        // 初始化
         initDateSelectors();
         renderCalendarLedger();
         toggleMainCategory('餐饮');
