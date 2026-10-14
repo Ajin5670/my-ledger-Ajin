@@ -158,7 +158,7 @@
         <!-- Tab 2: 旅行足迹 -->
         <div id="tab-travel" class="hidden h-full w-full relative">
             
-            <!-- 顶端一体化气泡控制栏：采用玻璃毛玻璃透明质感 -->
+            <!-- 顶端一体化气泡控制栏：玻璃毛玻璃透明质感 -->
             <div class="absolute safe-travel-top left-2.5 right-2.5 z-20 flex flex-col gap-2 pointer-events-none">
                 
                 <div class="rounded-2xl p-2.5 shadow-xl border flex items-center justify-between gap-3 pointer-events-auto" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
@@ -185,7 +185,7 @@
                     </div>
                 </div>
 
-                <!-- 搜索栏折叠岛（玻璃透明效果） -->
+                <!-- 搜索栏折叠岛 -->
                 <div class="flex justify-between items-center pointer-events-auto">
                     <div class="relative w-full max-w-xs">
                         <div id="expand-search-box" class="hidden absolute top-0 left-0 w-full rounded-2xl shadow-xl border p-1 flex items-center gap-1 z-30" style="background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
@@ -212,7 +212,7 @@
                     <span>📜 归档历史行程</span>
                     <span class="text-[10px] theme-text-sub font-normal">点击【查看】定位并缩放</span>
                 </div>
-                <div id="archived-trips-list" class="space-y-1 text-xs"></div>
+                <div id="archived-trips-list" class="space-y-1.5 text-xs"></div>
             </div>
         </div>
     </main>
@@ -1116,7 +1116,6 @@
             }
 
             containerEl.classList.remove('hidden');
-            // 玻璃透光毛玻璃苹果风列表项渲染
             listEl.innerHTML = points.map((p, i) => `
                 <div onclick="openModal(${p.lat}, ${p.lng}, ${i})" class="px-3 py-2 flex justify-between items-center cursor-pointer active:bg-black/5 transition">
                     <div class="truncate pr-2">
@@ -1172,17 +1171,17 @@
                 const dateStr = t.startTime ? t.startTime.split(' ')[0] : "--";
 
                 return `
-                    <div class="p-2 rounded-xl flex justify-between items-center border ${isCurrentViewing ? 'border-blue-500 bg-blue-50/80 shadow-xs' : ''}" style="background-color: rgba(255,255,255,0.4);">
+                    <div class="p-2.5 rounded-xl flex justify-between items-center border ${isCurrentViewing ? 'border-blue-500 bg-blue-50/80 shadow-xs' : ''}" style="background-color: rgba(255,255,255,0.4);">
                         <div onclick="previewArchivedTrip(${idx})" class="cursor-pointer flex-1 truncate pr-2">
                             <span class="font-bold text-blue-600 text-xs hover:underline" onclick="editTripName(${idx}, event)" title="点击修改行程名">🚩 ${nameStr}</span>
                             <span class="theme-text-sub text-[10px] ml-1">(${dateStr} | ${t.points.length}点)</span>
                         </div>
-                        <div class="flex items-center space-x-1 whitespace-nowrap">
-                            <span class="text-red-500 font-extrabold text-xs mr-1">￥${cost.toFixed(2)}</span>
-                            <button onclick="previewArchivedTrip(${idx})" class="px-2 py-0.5 border ${isCurrentViewing ? 'bg-blue-600 text-white' : 'theme-text-main'} rounded-lg text-[10px] font-semibold" style="background-color: rgba(255,255,255,0.6);">
-                                ${isCurrentViewing ? '查看中' : '查看'}
+                        <div class="flex items-center space-x-1.5 shrink-0 whitespace-nowrap">
+                            <span class="text-red-500 font-extrabold text-xs">￥${cost.toFixed(2)}</span>
+                            <button onclick="previewArchivedTrip(${idx})" class="px-2.5 py-1 border rounded-lg text-[10px] font-semibold transition ${isCurrentViewing ? 'bg-blue-600 text-white border-blue-600' : 'theme-text-main theme-card-bg'}" style="background-color: ${isCurrentViewing ? '#2563eb' : 'rgba(255,255,255,0.7)'};">
+                                ${isCurrentViewing ? '取消查看' : '查看'}
                             </button>
-                            <button onclick="restoreArchivedTrip(${idx})" class="px-2 py-0.5 text-white rounded-lg text-[10px] font-bold" style="background-color: var(--accent-color);">
+                            <button onclick="restoreArchivedTrip(${idx})" class="px-2.5 py-1 text-white rounded-lg text-[10px] font-bold shadow-xs" style="background-color: var(--accent-color);">
                                 继续行程
                             </button>
                             <button onclick="deleteArchivedTrip(${idx})" class="text-gray-400 hover:text-red-500 font-bold px-1 text-xs">🗑️</button>
