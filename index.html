@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="warm-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>小步 · 记账与足迹</title>
+    
+    <link rel="icon" type="image/jpeg" href="icon.jpeg">
+    <link rel="apple-touch-icon" href="icon.jpeg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="小步记账足迹">
+    
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: 'a24da59f40d0e6498f64b7152317d726'
+        }
+    </script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=92836525ccf18e11a09d1fa9f324fe00&plugin=AMap.PlaceSearch,AMap.AutoComplete,AMap.Driving,AMap.Geocoder"></script>
+
+    <style>
+        html[data-theme="warm-white"] { --app-bg: #f8fafc; --card-bg: #ffffff; --text-primary: #1e293b; --text-secondary: #64748b; --accent-color: #2563eb; --border-color: #f1f5f9; }
+        html[data-theme="sakura"] { --app-bg: #FFF5F7; --card-bg: #ffffff; --text-primary: #4A3B40; --text-secondary: #A68B93; --accent-color: #FF6B8B; --border-color: rgba(255, 107, 139, 0.1); }
+        html[data-theme="midnight"] { --app-bg: #0c0c0e; --card-bg: #1c1c1e; --text-primary: #f5f5f7; --text-secondary: #98989f; --accent-color: #0a84ff; --border-color: rgba(255, 255, 255, 0.08); }
+        html[data-theme="forest"] { --app-bg: #F2F6F3; --card-bg: #ffffff; --text-primary: #1F3324; --text-secondary: #738F7A; --accent-color: #2E7D32; --border-color: rgba(46, 125, 50, 0.08); }
+        html[data-theme="imperial"] { --app-bg: #F9F6F0; --card-bg: #ffffff; --text-primary: #3B2E2A; --text-secondary: #998A82; --accent-color: #C93B2B; --border-color: rgba(201, 59, 43, 0.1); }
+
+        :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--app-bg); color: var(--text-primary); padding-bottom: var(--sab); transition: background-color 0.3s, color 0.3s; }
+        .safe-nav { padding-bottom: max(10px, var(--sab)); }
+        
+        .cute-title-font { font-family: 'ZCOOL KuaiLe', 'Comic Sans MS', 'PingFang SC', cursive, sans-serif; letter-spacing: 0.5px; }
+
+        .theme-card-bg { background-color: var(--card-bg) !important; border-color: var(--border-color) !important; }
+        .theme-text-main { color: var(--text-primary) !important; }
+        .theme-text-sub { color: var(--text-secondary) !important; }
+        
+        .pulse-marker { width: 18px; height: 18px; background-color: var(--accent-color); border-radius: 50%; box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); animation: pulse 1.6s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); } }
+        .modal-overlay { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+
+        .theme-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .theme-modal.active { display: flex; }
+
+        .amap-sug-result { z-index: 9999 !important; border-radius: 14px !important; box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important; font-size: 13px !important; }
+        .sub-item-btn.active { background-color: var(--accent-color) !important; color: #ffffff !important; border-color: var(--accent-color) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: 700; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- 顶部导航：精简多余空白，更加紧凑贴顶 -->
+    <header id="app-header" class="theme-card-bg border-b px-4 py-2.5 flex justify-between items-center z-30 flex-none shadow-xs">
+        <button onclick="openThemeModal()" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full theme-card-bg border text-xs font-semibold theme-text-main shadow-2xs active:scale-95 transition">
+            <span>🎨</span> <span id="currentThemeTitle">柔白</span>
+        </button>
+        <h1 class="font-bold text-base cute-title-font theme-text-main tracking-wider">🐾 小步 · 记账与足迹 🐾</h1>
+        <div class="w-14"></div>
+    </header>
+
+    <!-- 主题切换弹窗 -->
+    <div class="theme-modal" id="themeModal">
+        <div class="theme-card-bg rounded-3xl p-6 w-full max-w-sm shadow-2xl border space-y-4">
+            <h3 class="font-bold text-lg text-center cute-title-font theme-text-main">选择主题风格</h3>
+            <div class="space-y-2">
+                <div onclick="setTheme('warm-white', '柔白')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
+                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-blue-500 inline-block"></span><span>柔白</span></div>
+                    <span class="check-icon font-bold" style="color: var(--accent-color);">✓</span>
+                </div>
+                <div onclick="setTheme('sakura', '粉红')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
+                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-pink-400 inline-block"></span><span>粉红</span></div>
+                    <span class="check-icon font-bold" style="color: var(--accent-color);"></span>
+                </div>
+                <div onclick="setTheme('midnight', '暗夜')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
+                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-gray-900 inline-block"></span><span>暗夜</span></div>
+                    <span class="check-icon font-bold" style="color: var(--accent-color);"></span>
+                </div>
+                <div onclick="setTheme('forest', '森绿')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
+                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-emerald-600 inline-block"></span><span>森绿</span></div>
+                    <span class="check-icon font-bold" style="color: var(--accent-color);"></span>
+                </div>
+                <div onclick="setTheme('imperial', '国潮')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
+                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-red-600 inline-block"></span><span>国潮</span></div>
+                    <span class="check-icon font-bold" style="color: var(--accent-color);"></span>
+                </div>
+            </div>
+            <button onclick="closeThemeModal()" class="w-full text-white font-bold py-3.5 rounded-2xl text-sm shadow-md transition active:scale-95" style="background-color: var(--accent-color);">确定</button>
+        </div>
+    </div>
+
+    <main class="flex-1 relative overflow-hidden">
+        
+        <!-- Tab 1: 日常记账 -->
+        <div id="tab-daily" class="h-full overflow-y-auto p-4 space-y-4 pb-24 max-w-lg mx-auto">
+            <div class="theme-card-bg p-5 rounded-3xl shadow-sm border">
+                <label class="block text-xs font-bold theme-text-sub uppercase tracking-wider mb-1 cute-title-font">✨ 消费金额 ✨</label>
+                <div class="flex items-center space-x-2 border-b pb-2">
+                    <span class="text-3xl font-bold theme-text-sub">￥</span>
+                    <input type="number" id="daily-amount" placeholder="0.00" class="w-full text-3xl font-extrabold focus:outline-none bg-transparent" style="color: var(--accent-color);">
+                </div>
+            </div>
+
+            <div class="theme-card-bg p-5 rounded-3xl shadow-sm border space-y-3">
+                <label class="block text-xs font-bold theme-text-sub uppercase tracking-wider cute-title-font">🎈 分类选择 🎈</label>
+                <div class="grid grid-cols-3 gap-2.5">
+                    <button onclick="toggleMainCategory('餐饮')" id="cat-btn-餐饮" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🍔 餐饮</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                    <button onclick="toggleMainCategory('交通')" id="cat-btn-交通" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🚗 交通</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                    <button onclick="toggleMainCategory('购物')" id="cat-btn-购物" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🛍️ 购物</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                    <button onclick="toggleMainCategory('门票')" id="cat-btn-门票" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🎫 门票</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                    <button onclick="toggleMainCategory('住宿')" id="cat-btn-住宿" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🏨 住宿</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                    <button onclick="toggleMainCategory('其他')" id="cat-btn-其他" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>📦 其他</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                </div>
+
+                <div id="sub-category-box" class="hidden p-3 rounded-2xl border theme-card-bg space-y-1.5 transition-all duration-300" style="background-color: rgba(0,0,0,0.015);">
+                    <div class="text-[10px] font-bold theme-text-sub flex justify-between items-center px-1">
+                        <span id="sub-cat-title">点击选择细分项目：</span>
+                        <button onclick="closeSubCatBox()" class="text-xs text-gray-400 font-bold">✕ 收起</button>
+                    </div>
+                    <div id="sub-category-items" class="flex flex-wrap gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <div class="theme-card-bg p-5 rounded-3xl shadow-sm border">
+                <label class="block text-xs font-bold theme-text-sub uppercase tracking-wider mb-2 cute-title-font">📝 备注说明 📝</label>
+                <input type="text" id="daily-note" placeholder="写点好玩的备注..." class="w-full focus:outline-none text-sm p-3 rounded-2xl border theme-card-bg theme-text-main">
+            </div>
+
+            <button onclick="saveDaily()" class="w-full text-white font-bold py-4 rounded-2xl shadow-lg active:scale-98 transition cute-title-font text-base tracking-wide" style="background-color: var(--accent-color);">
+                ✨ 保存记账 ✨
+            </button>
+
+            <div class="theme-card-bg p-5 rounded-3xl shadow-sm border space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm theme-text-main cute-title-font">📅 消费日历账单</h3>
+                    <div class="flex space-x-2">
+                        <select id="filter-year" onchange="changeFilterYearMonth()" class="border rounded-xl px-2.5 py-1 text-xs font-semibold theme-text-sub theme-card-bg focus:outline-none"></select>
+                        <select id="filter-month" onchange="changeFilterYearMonth()" class="border rounded-xl px-2.5 py-1 text-xs font-semibold theme-text-sub theme-card-bg focus:outline-none">
+                            <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
+                            <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
+                            <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
+                            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-3.5 rounded-2xl flex justify-between items-center border" style="background-color: rgba(0,0,0,0.02);">
+                    <span class="text-xs theme-text-sub font-medium">本月总消费</span>
+                    <span id="monthly-total-amount" class="text-lg font-black" style="color: var(--accent-color);">￥0.00</span>
+                </div>
+                <div id="calendar-ledger-tree" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+        <!-- Tab 2: 旅行足迹 -->
+        <div id="tab-travel" class="hidden h-full w-full relative">
+            
+            <!-- 顶端一体化气泡控制栏 -->
+            <div class="absolute top-2.5 left-2.5 right-2.5 z-20 flex flex-col gap-2 pointer-events-none">
+                
+                <div class="theme-card-bg backdrop-blur-md rounded-2xl p-2.5 shadow-xl border flex items-center justify-between gap-3 pointer-events-auto">
+                    <div class="flex items-center space-x-2.5 overflow-hidden">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm shrink-0" style="background-color: var(--accent-color);">
+                            📍
+                        </div>
+                        <div class="truncate">
+                            <div class="flex items-center gap-1.5">
+                                <span id="panel-title-tag" class="font-bold text-xs theme-text-main cute-title-font truncate">本次行程</span>
+                                <span id="trip-status-indicator" class="text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-gray-100 theme-text-sub">⚪ 浏览</span>
+                            </div>
+                            <div class="text-xs font-black text-red-500 mt-0.5"><span id="trip-total-cost">￥0.00</span> <span id="trip-meta" class="text-[9px] theme-text-sub font-normal ml-1">| 0 站点</span></div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="locateMe()" class="px-2 py-1.5 rounded-xl border text-xs font-semibold theme-text-main shadow-2xs active:scale-95 transition flex items-center gap-1 theme-card-bg">
+                            🎯 定位
+                        </button>
+                        <button id="btn-toggle-trip" onclick="toggleTripState()" class="px-3 py-1.5 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center gap-1" style="background-color: var(--accent-color);">
+                            🚀 <span id="trip-btn-text">开始旅行</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 搜索栏折叠岛 -->
+                <div class="flex justify-between items-center pointer-events-auto">
+                    <div class="relative w-full max-w-xs">
+                        <div id="expand-search-box" class="hidden absolute top-0 left-0 w-full theme-card-bg backdrop-blur-md rounded-2xl shadow-xl border p-1 flex items-center gap-1 z-30">
+                            <input type="text" id="map-search-input" placeholder="搜美食/景点(回车)..." onkeydown="handleMapSearch(event)" class="w-full bg-transparent text-xs px-2.5 py-1.5 focus:outline-none theme-text-main">
+                            <button onclick="toggleSearchBox()" class="text-xs text-gray-400 font-bold px-2">✕</button>
+                        </div>
+                        <button onclick="toggleSearchBox()" class="theme-card-bg backdrop-blur-md px-3 py-1.5 rounded-xl shadow border text-xs font-semibold theme-text-main flex items-center gap-1.5 active:scale-95 transition">
+                            <span>🔍</span> <span>搜索附近地点...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="trip-nodes-container" class="hidden theme-card-bg backdrop-blur-md rounded-2xl p-2 shadow-lg border max-h-24 overflow-y-auto space-y-1 pointer-events-auto">
+                    <div id="trip-nodes-list" class="space-y-1 text-[11px]"></div>
+                </div>
+
+            </div>
+
+            <div id="map" class="w-full h-full z-0"></div>
+
+            <div class="absolute bottom-14 left-3 right-3 z-20 theme-card-bg backdrop-blur-md p-2.5 rounded-2xl border max-h-28 overflow-y-auto shadow-xl">
+                <div class="text-xs font-bold theme-text-main mb-1 flex items-center justify-between cute-title-font">
+                    <span>📜 归档历史行程</span>
+                    <span class="text-[10px] theme-text-sub font-normal">点击【查看】定位并缩放</span>
+                </div>
+                <div id="archived-trips-list" class="space-y-1 text-xs"></div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="safe-nav fixed bottom-0 left-0 right-0 theme-card-bg backdrop-blur-md border-t flex justify-around py-2 z-50 shadow-2xl">
+        <button onclick="switchTab('daily')" id="nav-daily" class="flex flex-col items-center font-bold text-xs cute-title-font" style="color: var(--accent-color);">
+            <span class="text-base mb-0.5">💰</span>日常记账
+        </button>
+        <button onclick="switchTab('travel')" id="nav-travel" class="flex flex-col items-center theme-text-sub font-semibold text-xs cute-title-font">
+            <span class="text-base mb-0.5">🗺️</span>旅行足迹
+        </button>
+    </nav>
+
+    <!-- 打卡点添加与编辑 Modal -->
+    <div id="custom-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+        <div class="theme-card-bg rounded-3xl p-6 w-full max-w-sm shadow-2xl border space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 id="modal-title-text" class="font-bold text-base theme-text-main cute-title-font">📍 打卡点设置</h3>
+                <button onclick="closeModal()" class="theme-text-sub text-lg font-bold px-2">×</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold theme-text-sub mb-1">地点名称</label>
+                    <input type="text" id="modal-input-name" class="w-full border rounded-2xl p-3 text-sm focus:outline-none theme-card-bg theme-text-main font-medium">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold theme-text-sub mb-1">消费金额 (元)</label>
+                    <input type="number" id="modal-input-cost" class="w-full border rounded-2xl p-3 text-sm focus:outline-none font-bold text-red-500 theme-card-bg" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold theme-text-sub mb-1">备注说明</label>
+                    <input type="text" id="modal-input-note" class="w-full border rounded-2xl p-3 text-sm focus:outline-none theme-card-bg theme-text-main" placeholder="写点备注...">
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeModal()" class="flex-1 bg-gray-200 border border-gray-300 text-gray-700 font-bold py-3 rounded-2xl text-sm transition active:scale-95">取消</button>
+                <button id="modal-btn-confirm" class="flex-1 text-white font-bold py-3 rounded-2xl text-sm shadow-md transition active:scale-95" style="background-color: var(--accent-color);">确定保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POI 详情模态框 -->
+    <div id="poi-detail-modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+        <div class="theme-card-bg rounded-3xl p-5 w-full max-w-sm shadow-2xl border space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 id="poi-detail-name" class="font-bold text-base theme-text-main truncate pr-2 cute-title-font">地点详情</h3>
+                <button onclick="closePoiModal()" class="theme-text-sub text-lg font-bold px-2">×</button>
+            </div>
+            <div id="poi-img-container" class="w-full h-36 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl overflow-hidden relative flex items-center justify-center shadow-inner">
+                <img id="poi-detail-img" class="w-full h-full object-cover absolute inset-0" src="" alt="街景图片" onerror="this.style.display='none';">
+                <div class="text-white text-xs font-bold flex flex-col items-center z-10 drop-shadow">
+                    <span class="text-2xl mb-1">📸</span>
+                    <span>高德街景 / 旅游印象</span>
+                </div>
+            </div>
+            <div class="text-xs space-y-1.5 theme-text-sub">
+                <div>🏷️ 分类类型：<span id="poi-detail-type" class="theme-text-main font-medium">--</span></div>
+                <div>📍 详细地址：<span id="poi-detail-address" class="theme-text-main font-medium">--</span></div>
+                <div>📞 联系电话：<span id="poi-detail-tel" class="theme-text-main font-medium">--</span></div>
+            </div>
+            <div class="pt-2">
+                <button id="poi-btn-add" class="w-full text-white font-bold py-3 rounded-2xl text-sm shadow-md" style="background-color: var(--accent-color);">
+                    加为行程打卡点
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openThemeModal() { document.getElementById('themeModal').classList.add('active'); }
+        function closeThemeModal() { document.getElementById('themeModal').classList.remove('active'); }
+        function setTheme(themeName, titleText) {
+            document.documentElement.setAttribute('data-theme', themeName);
+            document.getElementById('currentThemeTitle').innerText = titleText;
+            localStorage.setItem('app_theme', themeName);
+            localStorage.setItem('app_theme_title', titleText);
+            
+            document.querySelectorAll('.theme-option').forEach(el => {
+                el.querySelector('.check-icon').innerText = '';
+            });
+            event.currentTarget.querySelector('.check-icon').innerText = '✓';
+            closeThemeModal();
+        }
+
+        const savedTheme = localStorage.getItem('app_theme');
+        const savedTitle = localStorage.getItem('app_theme_title');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.getElementById('currentThemeTitle').innerText = savedTitle || '柔白';
+        }
+
+        const subCategoriesMap = {
+            '餐饮': ['🥐 早餐', '🍱 午餐', '🍲 晚餐', '🍢 夜宵', '🍿 零食', '☕ 咖啡/奶茶'],
+            '交通': ['🚕 打车/网约车', '🚌 公交/地铁', '🚄 高铁/火车', '✈️ 机票', '⛽ 加油/停车'],
+            '购物': ['🛒 超市百货', '👗 服饰鞋包', '📱 电子数码', '💄 美妆护肤', '🎁 伴手礼品'],
+            '门票': ['🏛️ 景区门票', '🎢 游乐园票', '🎭 演出剧场', '🎨 展览场馆', '🎟️ 索道缆车'],
+            '住宿': ['🏨 快捷酒店', '🏡 特色民宿', '🏰 豪华酒店', '⛺ 露营青旅'],
+            '其他': ['🧼 日常用品', '💊 医药健康', '💸 临时服务', '📦 琐碎杂项']
+        };
+
+        let currentMainCat = '餐饮';
+        let currentSubCat = '🍱 午餐';
+        let currentCategory = '🍔 餐饮 - 🍱 午餐';
+
+        let dailyRecords = JSON.parse(localStorage.getItem('daily_records')) || [];
+        let archivedTrips = JSON.parse(localStorage.getItem('archived_trips')) || [];
+        let expandedDays = JSON.parse(localStorage.getItem('calendar_expanded_days')) || {};
+
+        let activeTrip = JSON.parse(localStorage.getItem('active_trip')) || {
+            isTravelling: false,
+            tripName: "示例行程",
+            startTime: null,
+            points: []
+        };
+
+        let map = null;
+        let mapMarkers = [];
+        let searchPoiMarkers = [];
+        let drivingRouteLines = [];
+        let activeInfoWindow = null;
+        let myLocationMarker = null;
+        let previewTripIndex = null;
+        let editingPointIndex = null;
+        let pendingPointData = null;
+        let placeSearch = null;
+        let drivingService = null;
+        let geocoder = null;
+        let locateClickCount = 0;
+        let locateTimer = null;
+        let selectedPoiData = null;
+        let lastHotspotTime = 0;
+
+        function initDateSelectors() {
+            const yearSelect = document.getElementById('filter-year');
+            const monthSelect = document.getElementById('filter-month');
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            
+            let yearsHTML = '';
+            for (let y = 2020; y <= currentYear + 10; y++) {
+                yearsHTML += `<option value="${y}">${y}年</option>`;
+            }
+            yearSelect.innerHTML = yearsHTML;
+
+            const savedYear = localStorage.getItem('last_ledger_year') || currentYear;
+            const savedMonth = localStorage.getItem('last_ledger_month') || String(now.getMonth() + 1).padStart(2, '0');
+
+            yearSelect.value = savedYear;
+            monthSelect.value = savedMonth;
+        }
+
+        function changeFilterYearMonth() {
+            const year = document.getElementById('filter-year').value;
+            const month = document.getElementById('filter-month').value;
+            localStorage.setItem('last_ledger_year', year);
+            localStorage.setItem('last_ledger_month', month);
+            renderCalendarLedger();
+        }
+
+        function toggleMainCategory(mainCat) {
+            currentMainCat = mainCat;
+            
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.style.borderColor = "";
+                btn.style.color = "";
+                btn.style.backgroundColor = "";
+            });
+
+            const activeBtn = document.getElementById(`cat-btn-${mainCat}`);
+            if (activeBtn) {
+                activeBtn.style.borderColor = "var(--accent-color)";
+                activeBtn.style.color = "var(--accent-color)";
+                activeBtn.style.backgroundColor = "rgba(37, 99, 235, 0.1)";
+            }
+
+            const box = document.getElementById('sub-category-box');
+            const titleEl = document.getElementById('sub-cat-title');
+            const itemsEl = document.getElementById('sub-category-items');
+
+            titleEl.innerText = `点击选择【${mainCat}】的细分类型：`;
+            const subItems = subCategoriesMap[mainCat] || [];
+
+            if (!subItems.includes(currentSubCat)) {
+                currentSubCat = subItems[0] || '';
+            }
+            currentCategory = `${mainCat} - ${currentSubCat}`;
+
+            itemsEl.innerHTML = subItems.map(item => {
+                const isSelected = (item === currentSubCat);
+                return `
+                    <button onclick="selectSubCategory('${mainCat}', '${item}')" 
+                            class="sub-item-btn px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition active:scale-95 theme-card-bg theme-text-main ${isSelected ? 'active' : ''}">
+                        ${item}
+                    </button>
+                `;
+            }).join('');
+
+            box.classList.remove('hidden');
+        }
+
+        function selectSubCategory(mainCat, subItem) {
+            currentSubCat = subItem;
+            currentCategory = `${mainCat} - ${subItem}`;
+
+            document.querySelectorAll('.sub-item-btn').forEach(btn => {
+                if (btn.innerText.trim() === subItem.trim()) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function closeSubCatBox() {
+            document.getElementById('sub-category-box').classList.add('hidden');
+        }
+
+        function switchTab(tab) {
+            const headerEl = document.getElementById('app-header');
+            if (tab === 'daily') {
+                headerEl.style.display = 'flex';
+                document.getElementById('tab-daily').classList.remove('hidden');
+                document.getElementById('tab-travel').classList.add('hidden');
+                document.getElementById('nav-daily').style.color = "var(--accent-color)";
+                document.getElementById('nav-travel').style.color = "";
+                renderCalendarLedger();
+            } else {
+                headerEl.style.display = 'none';
+                document.getElementById('tab-daily').classList.add('hidden');
+                document.getElementById('tab-travel').classList.remove('hidden');
+                document.getElementById('nav-travel').style.color = "var(--accent-color)";
+                document.getElementById('nav-daily').style.color = "";
+                setTimeout(() => {
+                    if (!map) initMap();
+                    else map.resize();
+                }, 100);
+            }
+        }
+
+        function saveDaily() {
+            const amount = document.getElementById('daily-amount').value;
+            const note = document.getElementById('daily-note').value;
+            if (!amount) return alert('请输入金额！');
+
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const dayStr = now.toISOString().split('T')[0];
+
+            document.getElementById('filter-year').value = year;
+            document.getElementById('filter-month').value = month;
+            localStorage.setItem('last_ledger_year', year);
+            localStorage.setItem('last_ledger_month', month);
+
+            expandedDays[dayStr] = true;
+            localStorage.setItem('calendar_expanded_days', JSON.stringify(expandedDays));
+
+            dailyRecords.unshift({
+                id: Date.now(),
+                date: now.toISOString(),
+                displayDate: now.toLocaleString(),
+                category: currentCategory,
+                amount: parseFloat(amount).toFixed(2),
+                note: note || '无备注'
+            });
+
+            localStorage.setItem('daily_records', JSON.stringify(dailyRecords));
+            document.getElementById('daily-amount').value = '';
+            document.getElementById('daily-note').value = '';
+            renderCalendarLedger();
+            alert('🎉 记账成功！');
+        }
+
+        function deleteDailyRecord(id) {
+            if (confirm('确定要删除这条日常记账记录吗？')) {
+                dailyRecords = dailyRecords.filter(r => r.id !== id);
+                localStorage.setItem('daily_records', JSON.stringify(dailyRecords));
+                renderCalendarLedger();
+            }
+        }
+
+        function toggleDayExpand(dayStr) {
+            expandedDays[dayStr] = !expandedDays[dayStr];
+            localStorage.setItem('calendar_expanded_days', JSON.stringify(expandedDays));
+            renderCalendarLedger();
+        }
+
+        function renderCalendarLedger() {
+            const year = document.getElementById('filter-year').value;
+            const month = document.getElementById('filter-month').value;
+            const prefix = `${year}-${month}`;
+
+            const matched = dailyRecords.filter(r => r.date && r.date.startsWith(prefix));
+            const total = matched.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+            document.getElementById('monthly-total-amount').innerText = `￥${total.toFixed(2)}`;
+
+            let daysMap = {};
+            matched.forEach(r => {
+                const dayStr = r.date.split('T')[0];
+                if (!daysMap[dayStr]) daysMap[dayStr] = { total: 0, items: [] };
+                daysMap[dayStr].total += parseFloat(r.amount);
+                daysMap[dayStr].items.push(r);
+            });
+
+            const treeEl = document.getElementById('calendar-ledger-tree');
+            const sortedDays = Object.keys(daysMap).sort().reverse();
+
+            if (sortedDays.length === 0) {
+                treeEl.innerHTML = `<div class="theme-text-sub text-center py-4 text-xs">本月暂无消费记录，快去上方记一笔吧~</div>`;
+                return;
+            }
+
+            treeEl.innerHTML = sortedDays.map(day => {
+                const dayData = daysMap[day];
+                const isExpanded = !!expandedDays[day];
+
+                return `
+                    <div class="theme-card-bg rounded-2xl border overflow-hidden transition-all duration-200 shadow-2xs">
+                        <div onclick="toggleDayExpand('${day}')" class="p-3 flex justify-between items-center cursor-pointer hover:bg-black/5 transition">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs">${isExpanded ? '▼' : '▶'}</span>
+                                <span class="font-bold text-xs theme-text-main">📅 ${day}</span>
+                                <span class="text-[10px] theme-text-sub">(${dayData.items.length}笔)</span>
+                            </div>
+                            <span class="font-black text-sm" style="color: var(--accent-color);">￥${dayData.total.toFixed(2)}</span>
+                        </div>
+
+                        ${isExpanded ? `
+                            <div class="p-2.5 space-y-1.5 border-t theme-card-bg" style="background-color: rgba(0,0,0,0.015);">
+                                ${dayData.items.map(item => `
+                                    <div class="flex justify-between items-center text-xs theme-text-main theme-card-bg p-2.5 rounded-xl border shadow-3xs">
+                                        <div class="pr-2 truncate">
+                                            <div class="font-bold">${item.category}</div>
+                                            <div class="text-[10px] theme-text-sub mt-0.5">备注: ${item.note}</div>
+                                        </div>
+                                        <div class="flex items-center space-x-2 whitespace-nowrap">
+                                            <span class="font-extrabold text-sm" style="color: var(--accent-color);">￥${item.amount}</span>
+                                            <button onclick="deleteDailyRecord(${item.id}); event.stopPropagation();" class="text-gray-300 hover:text-red-500 font-bold px-1 text-xs">🗑️</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleSearchBox() {
+            const box = document.getElementById('expand-search-box');
+            box.classList.toggle('hidden');
+            if (!box.classList.contains('hidden')) {
+                document.getElementById('map-search-input').focus();
+            }
+        }
+
+        function handleMapSearch(e) {
+            if (e.key === 'Enter') {
+                const keyword = document.getElementById('map-search-input').value.trim();
+                if (!keyword || !map || !placeSearch) return;
+
+                searchPoiMarkers.forEach(m => map.remove(m));
+                searchPoiMarkers = [];
+
+                const center = map.getCenter();
+                placeSearch.searchNearBy(keyword, center, 3000, (status, result) => {
+                    if (status === 'complete' && result.poiList && result.poiList.pois) {
+                        const pois = result.poiList.pois;
+                        alert(`🔍 成功为您在附近找到 ${pois.length} 个【${keyword}】相关地点，已在地图上标出！`);
+
+                        pois.forEach((poi) => {
+                            let iconEmoji = "📍";
+                            if (keyword.includes('美食') || keyword.includes('餐厅') || keyword.includes('吃')) iconEmoji = "🍔";
+                            else if (keyword.includes('景点') || keyword.includes('公园') || keyword.includes('玩')) iconEmoji = "🏞️";
+                            else if (keyword.includes('加油')) iconEmoji = "⛽";
+
+                            const marker = new AMap.Marker({
+                                position: [poi.location.lng, poi.location.lat],
+                                content: `<div style="background:#2563eb; color:white; padding:4px 8px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.2); font-size:11px; font-weight:bold; display:flex; align-items:center; gap:3px; white-space:nowrap;">${iconEmoji} ${poi.name}</div>`,
+                                offset: new AMap.Pixel(-15, -15)
+                            });
+
+                            marker.on('click', () => {
+                                map.setCenter([poi.location.lng, poi.location.lat]);
+                                openPoiModal({
+                                    name: poi.name,
+                                    type: poi.type || keyword,
+                                    address: poi.address || '暂无详细地址',
+                                    tel: poi.tel || '暂无电话',
+                                    lat: poi.location.lat,
+                                    lng: poi.location.lng,
+                                    photos: poi.photos || []
+                                });
+                            });
+
+                            marker.setMap(map);
+                            searchPoiMarkers.push(marker);
+                        });
+
+                        if (pois.length > 0) {
+                            map.setCenter([pois[0].location.lng, pois[0].location.lat]);
+                            map.setZoom(14);
+                        }
+                    } else {
+                        alert('抱歉，未能在附近检索到相关结果，换个关键词试试吧！');
+                    }
+                });
+                toggleSearchBox();
+            }
+        }
+
+        function initMap() {
+            const savedCenter = JSON.parse(localStorage.getItem('map_last_center')) || [104.0668, 30.5728];
+            const savedZoom = parseInt(localStorage.getItem('map_last_zoom')) || 14;
+
+            map = new AMap.Map('map', {
+                zoom: savedZoom,
+                center: savedCenter,
+                viewMode: '2D',
+                isHotspot: true
+            });
+
+            map.on('moveend', () => {
+                const center = map.getCenter();
+                localStorage.setItem('map_last_center', JSON.stringify([center.getLng(), center.getLat()]));
+            });
+
+            map.on('zoomend', () => {
+                localStorage.setItem('map_last_zoom', map.getZoom());
+            });
+
+            placeSearch = new AMap.PlaceSearch({ map: map });
+            drivingService = new AMap.Driving({
+                policy: 0,
+                extensions: 'all'
+            });
+            geocoder = new AMap.Geocoder({ radius: 200, extensions: 'all' });
+
+            const auto = new AMap.AutoComplete({ input: "map-search-input" });
+            auto.on("select", (e) => {
+                if (e.poi && e.poi.location) {
+                    map.setCenter(e.poi.location);
+                    map.setZoom(15);
+                    openPoiModal({
+                        name: e.poi.name,
+                        type: e.poi.type || '地点标点',
+                        address: e.poi.address || '暂无详细地址',
+                        tel: e.poi.tel || '暂无电话',
+                        lat: e.poi.location.lat,
+                        lng: e.poi.location.lng,
+                        photos: e.poi.photos || []
+                    });
+                }
+            });
+
+            map.on('hotspotclick', function(e) {
+                lastHotspotTime = Date.now();
+                if (activeTrip.isTravelling && previewTripIndex === null) {
+                    const lat = e.lnglat.getLat();
+                    const lng = e.lnglat.getLng();
+                    openModal(lat, lng, null, e.name);
+                }
+            });
+
+            map.on('click', function(e) {
+                if (!(activeTrip.isTravelling && previewTripIndex === null)) return;
+
+                const lat = e.lnglat.getLat();
+                const lng = e.lnglat.getLng();
+
+                setTimeout(() => {
+                    if (Date.now() - lastHotspotTime < 400) return;
+
+                    geocoder.getAddress([lng, lat], function(status, result) {
+                        let detectedName = null;
+                        if (status === 'complete' && result.regeocode) {
+                            const pois = result.regeocode.pois;
+                            if (pois && pois.length > 0) {
+                                detectedName = pois[0].name;
+                            } else if (result.regeocode.formattedAddress) {
+                                detectedName = result.regeocode.formattedAddress;
+                            }
+                        }
+                        openModal(lat, lng, null, detectedName);
+                    });
+                }, 120);
+            });
+
+            map.on('dblclick', function(e) {
+                if (!activeTrip.isTravelling && previewTripIndex === null) {
+                    const defaultName = prompt("🚀 请为您的这次旅行取一个名字：", "旅行打卡");
+                    if (defaultName !== null) {
+                        startTripFromCoords(e.lnglat.getLat(), e.lnglat.getLng(), "地图起点", defaultName);
+                    }
+                }
+            });
+
+            updateTripUI();
+            renderArchivedTrips();
+        }
+
+        function locateMe() {
+            locateClickCount++;
+            if (locateTimer) clearTimeout(locateTimer);
+
+            locateTimer = setTimeout(() => {
+                if (locateClickCount >= 2) {
+                    if (!activeTrip.isTravelling && previewTripIndex === null) {
+                        const tripName = prompt("🚀 请为您的这次旅行取一个名字：", "定位之旅");
+                        if (tripName !== null) {
+                            performLocate(true, tripName);
+                        } else {
+                            performLocate(false);
+                        }
+                    } else {
+                        performLocate(false);
+                    }
+                } else {
+                    performLocate(false);
+                }
+                locateClickCount = 0;
+            }, 300);
+        }
+
+        function performLocate(startTripImmediately, tripName) {
+            if (!navigator.geolocation) return alert('浏览器不支持定位');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lng = pos.coords.longitude;
+                const lat = pos.coords.latitude;
+                map.setCenter([lng, lat]);
+                map.setZoom(15);
+
+                if (myLocationMarker) map.remove(myLocationMarker);
+                myLocationMarker = new AMap.Marker({
+                    position: [lng, lat],
+                    content: '<div class="pulse-marker"></div>',
+                    offset: new AMap.Pixel(-9, -9)
+                });
+                myLocationMarker.setMap(map);
+
+                if (startTripImmediately) {
+                    startTripFromCoords(lat, lng, "真实定位起点", tripName || "定位之旅");
+                }
+            }, () => alert('定位失败，请允许浏览器定位权限。'));
+        }
+
+        function startTripFromCoords(lat, lng, name, tripName) {
+            previewTripIndex = null;
+            activeTrip = {
+                isTravelling: true,
+                tripName: tripName || "自定义行程",
+                startTime: new Date().toLocaleString(),
+                points: [{
+                    lat: lat, lng: lng, name: name, cost: 0,
+                    type: "📍 起点", time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), note: "出发地点"
+                }]
+            };
+            saveActiveTrip();
+            updateTripUI();
+            renderArchivedTrips();
+            alert(`🚀 旅行【${activeTrip.tripName}】已开始！后续添加的打卡点将自动连线。`);
+        }
+
+        function openPoiModal(data) {
+            selectedPoiData = data;
+            document.getElementById('poi-detail-name').innerText = data.name;
+            document.getElementById('poi-detail-type').innerText = data.type.split(';')[0];
+            document.getElementById('poi-detail-address').innerText = data.address;
+            document.getElementById('poi-detail-tel').innerText = data.tel;
+
+            const imgEl = document.getElementById('poi-detail-img');
+            if (data.photos && data.photos.length > 0 && data.photos[0].url) {
+                imgEl.src = data.photos[0].url;
+                imgEl.style.display = 'block';
+            } else {
+                imgEl.style.display = 'none';
+            }
+
+            document.getElementById('poi-detail-modal').classList.remove('hidden');
+        }
+
+        function closePoiModal() {
+            document.getElementById('poi-detail-modal').classList.add('hidden');
+            selectedPoiData = null;
+        }
+
+        document.getElementById('poi-btn-add').onclick = function() {
+            if (!selectedPoiData) return;
+            if (previewTripIndex !== null) {
+                archivedTrips[previewTripIndex].points.push({
+                    lat: selectedPoiData.lat, lng: selectedPoiData.lng,
+                    name: selectedPoiData.name, cost: 0, type: currentCategory,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), note: '搜索添加'
+                });
+                saveArchivedTrips();
+                updateTripUI();
+                renderArchivedTrips();
+                closePoiModal();
+            } else if (!activeTrip.isTravelling) {
+                const tripName = prompt("🚀 当前尚未开启旅行，请输入本次旅行名称并开始：", selectedPoiData.name + "之旅");
+                if (tripName !== null) {
+                    startTripFromCoords(selectedPoiData.lat, selectedPoiData.lng, selectedPoiData.name, tripName);
+                    closePoiModal();
+                }
+            } else {
+                closePoiModal();
+                openModal(selectedPoiData.lat, selectedPoiData.lng, null, selectedPoiData.name);
+            }
+        };
+
+        function toggleTripState() {
+            if (previewTripIndex !== null) {
+                previewTripIndex = null;
+            }
+
+            if (!activeTrip.isTravelling) {
+                const tripName = prompt("🚀 请为本次旅行取一个名字：", "快乐小旅");
+                if (tripName === null) return;
+
+                activeTrip = {
+                    isTravelling: true,
+                    tripName: tripName || "未命名行程",
+                    startTime: new Date().toLocaleString(),
+                    points: []
+                };
+                alert(`🚀 旅行【${activeTrip.tripName}】已开始！点击地图可记账打卡。`);
+                saveActiveTrip();
+                updateTripUI();
+            } else {
+                if (confirm(`🏁 确认结束【${activeTrip.tripName || '本次旅行'}】并归档？`)) {
+                    finishTripAndArchive();
+                }
+            }
+        }
+
+        function finishTripAndArchive() {
+            activeTrip.isTravelling = false;
+            activeTrip.endTime = new Date().toLocaleString();
+            archivedTrips.unshift({...activeTrip});
+            saveArchivedTrips();
+            
+            activeTrip.points = [];
+            activeTrip.tripName = "新行程";
+            saveActiveTrip();
+            
+            clearMapOverlay();
+            updateTripUI();
+            renderArchivedTrips();
+            alert('🎉 本次旅行已成功归档！');
+        }
+
+        function clearMapOverlay() {
+            if (activeInfoWindow) {
+                activeInfoWindow.close();
+                activeInfoWindow = null;
+            }
+            mapMarkers.forEach(m => map.remove(m));
+            mapMarkers = [];
+            drivingRouteLines.forEach(l => map.remove(l));
+            drivingRouteLines = [];
+        }
+
+        function openModal(lat, lng, pointIndex = null, defaultName = null) {
+            editingPointIndex = pointIndex;
+            pendingPointData = { lat, lng };
+
+            let currentPoints = (previewTripIndex !== null) ? archivedTrips[previewTripIndex].points : activeTrip.points;
+
+            if (pointIndex !== null) {
+                const pt = currentPoints[pointIndex];
+                document.getElementById('modal-title-text').innerText = `✏️ 编辑打卡点 #${pointIndex + 1}`;
+                document.getElementById('modal-input-name').value = pt.name;
+                document.getElementById('modal-input-cost').value = pt.cost;
+                document.getElementById('modal-input-note').value = pt.note;
+            } else {
+                document.getElementById('modal-title-text').innerText = '📍 添加打卡点';
+                document.getElementById('modal-input-name').value = defaultName || ('打卡点 ' + (currentPoints.length + 1));
+                document.getElementById('modal-input-cost').value = '0';
+                document.getElementById('modal-input-note').value = '无';
+            }
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+            pendingPointData = null;
+            editingPointIndex = null;
+        }
+
+        document.getElementById('modal-btn-confirm').onclick = function() {
+            const name = document.getElementById('modal-input-name').value || '打卡点';
+            const cost = parseFloat(document.getElementById('modal-input-cost').value || 0);
+            const note = document.getElementById('modal-input-note').value || '无';
+
+            let isArchivedMode = (previewTripIndex !== null);
+            let targetPoints = isArchivedMode ? archivedTrips[previewTripIndex].points : activeTrip.points;
+
+            let updatedIndex = editingPointIndex;
+
+            if (editingPointIndex !== null) {
+                targetPoints[editingPointIndex].name = name;
+                targetPoints[editingPointIndex].cost = cost;
+                targetPoints[editingPointIndex].note = note;
+            } else if (pendingPointData) {
+                targetPoints.push({
+                    lat: pendingPointData.lat,
+                    lng: pendingPointData.lng,
+                    name, cost,
+                    type: currentCategory,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    note
+                });
+                updatedIndex = targetPoints.length - 1;
+            }
+
+            if (isArchivedMode) saveArchivedTrips();
+            else saveActiveTrip();
+
+            updateTripUI();
+            renderArchivedTrips();
+            closeModal();
+
+            if (updatedIndex !== null && mapMarkers[updatedIndex] && activeInfoWindow) {
+                const p = targetPoints[updatedIndex];
+                const newContent = `
+                    <div style="font-size:11px; padding:4px;">
+                        <b>📍 ${updatedIndex + 1}. ${p.name}</b><br>
+                        ⏰ 时间：${p.time}<br>
+                        💰 消费：<b style="color:red;">￥${p.cost.toFixed(2)}</b> (${p.type})<br>
+                        📝 备注：${p.note}<br>
+                        <button onclick="openModal(${p.lat}, ${p.lng}, ${updatedIndex})" style="margin-top:5px; background:var(--accent-color); color:white; border:none; padding:3px 8px; border-radius:6px; font-weight:bold; cursor:pointer;">✏️ 点击修改</button>
+                    </div>
+                `;
+                activeInfoWindow.setContent(newContent);
+                activeInfoWindow.open(map, mapMarkers[updatedIndex].getPosition());
+            }
+
+            alert('✏️ 修改保存成功！');
+        };
+
+        function saveActiveTrip() {
+            localStorage.setItem('active_trip', JSON.stringify(activeTrip));
+        }
+
+        function saveArchivedTrips() {
+            localStorage.setItem('archived_trips', JSON.stringify(archivedTrips));
+        }
+
+        function updateTripUI() {
+            const statusEl = document.getElementById('trip-status-indicator');
+            const toggleBtn = document.getElementById('btn-toggle-trip');
+            const btnText = document.getElementById('trip-btn-text');
+
+            if (activeTrip.isTravelling && previewTripIndex === null) {
+                statusEl.innerHTML = '<span class="text-red-500 font-bold animate-pulse">🔴 进行中</span>';
+                statusEl.className = 'text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-red-50 text-red-600';
+                btnText.innerText = '结束行程';
+                toggleBtn.className = 'px-3 py-1.5 bg-red-600 active:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center gap-1';
+            } else if (previewTripIndex !== null) {
+                statusEl.innerHTML = '<span class="text-blue-500 font-bold">👀 查看中</span>';
+                statusEl.className = 'text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-blue-50 text-blue-600';
+                btnText.innerText = '开始旅行';
+                toggleBtn.className = 'px-3 py-1.5 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center gap-1';
+                toggleBtn.style.backgroundColor = 'var(--accent-color)';
+            } else {
+                statusEl.innerHTML = '⚪ 浏览';
+                statusEl.className = 'text-[9px] px-1.5 py-0.5 rounded-md font-semibold bg-gray-100 theme-text-sub';
+                btnText.innerText = '开始旅行';
+                toggleBtn.className = 'px-3 py-1.5 text-white rounded-xl text-xs font-bold shadow-md transition active:scale-95 flex items-center gap-1';
+                toggleBtn.style.backgroundColor = 'var(--accent-color)';
+            }
+
+            const targetTrip = (previewTripIndex !== null) ? archivedTrips[previewTripIndex] : activeTrip;
+            drawTripMap(targetTrip, activeTrip.isTravelling && previewTripIndex === null, previewTripIndex !== null);
+            renderStatsPanel(targetTrip);
+        }
+
+        function drawTripMap(trip, isTravellingActive, isPreviewMode) {
+            if (!map) return;
+            clearMapOverlay();
+
+            if (!trip || !trip.points || trip.points.length === 0) return;
+
+            if (trip.points.length > 1 && drivingService) {
+                const startPoint = trip.points[0];
+                const endPoint = trip.points[trip.points.length - 1];
+                const waypoints = trip.points.slice(1, trip.points.length - 1).map(p => new AMap.LngLat(p.lng, p.lat));
+
+                drivingService.search(
+                    new AMap.LngLat(startPoint.lng, startPoint.lat),
+                    new AMap.LngLat(endPoint.lng, endPoint.lat),
+                    { waypoints: waypoints },
+                    (status, result) => {
+                        if (status === 'complete' && result.routes && result.routes.length > 0) {
+                            const route = result.routes[0];
+                            let fullPath = [];
+                            route.steps.forEach(step => {
+                                step.path.forEach(pt => fullPath.push([pt.lng, pt.lat]));
+                            });
+
+                            const polyline = new AMap.Polyline({
+                                path: fullPath,
+                                strokeColor: '#ef4444',
+                                strokeWeight: 5,
+                                strokeOpacity: 0.85,
+                                lineJoin: 'round',
+                                lineCap: 'round'
+                            });
+                            map.add(polyline);
+                            drivingRouteLines.push(polyline);
+                            map.setFitView([polyline]);
+                        } else {
+                            drawFallbackPolyline(trip);
+                        }
+                    }
+                );
+            } else if (trip.points.length > 1) {
+                drawFallbackPolyline(trip);
+            } else if (trip.points.length === 1) {
+                map.setCenter([trip.points[0].lng, trip.points[0].lat]);
+                map.setZoom(15);
+            }
+
+            const lastIdx = trip.points.length - 1;
+
+            trip.points.forEach((p, index) => {
+                let markerContent = '';
+                const isLastPoint = (index === lastIdx);
+
+                if (isTravellingActive && isLastPoint) {
+                    markerContent = `<div class="pulse-marker" title="当前最新位置"></div>`;
+                } else if (isPreviewMode && isLastPoint) {
+                    markerContent = `<div style="background:#ef4444; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; box-shadow:0 4px 10px rgba(0,0,0,0.3); border:2px solid white;" title="目的地终点">🚩</div>`;
+                } else {
+                    markerContent = `<div style="background:#ef4444; color:white; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; box-shadow:0 3px 8px rgba(0,0,0,0.3); border:2px solid white;">${index + 1}</div>`;
+                }
+
+                const marker = new AMap.Marker({
+                    position: [p.lng, p.lat],
+                    content: markerContent,
+                    offset: new AMap.Pixel(-11, -11)
+                });
+                
+                const infoWindow = new AMap.InfoWindow({
+                    content: `
+                        <div style="font-size:11px; padding:4px;">
+                            <b>📍 ${index + 1}. ${p.name}</b><br>
+                            ⏰ 时间：${p.time}<br>
+                            💰 消费：<b style="color:red;">￥${p.cost.toFixed(2)}</b> (${p.type})<br>
+                            📝 备注：${p.note}<br>
+                            <button onclick="openModal(${p.lat}, ${p.lng}, ${index})" style="margin-top:5px; background:var(--accent-color); color:white; border:none; padding:3px 8px; border-radius:6px; font-weight:bold; cursor:pointer;">✏️ 点击修改</button>
+                        </div>
+                    `,
+                    offset: new AMap.Pixel(0, -18)
+                });
+
+                marker.on('click', () => {
+                    if (activeInfoWindow) activeInfoWindow.close();
+                    activeInfoWindow = infoWindow;
+                    infoWindow.open(map, marker.getPosition());
+                });
+
+                map.add(marker);
+                mapMarkers.push(marker);
+            });
+        }
+
+        function drawFallbackPolyline(trip) {
+            const path = trip.points.map(p => [p.lng, p.lat]);
+            const polyline = new AMap.Polyline({
+                path: path,
+                strokeColor: '#ef4444',
+                strokeWeight: 5,
+                strokeOpacity: 0.85,
+                lineJoin: 'round',
+                lineCap: 'round'
+            });
+            map.add(polyline);
+            drivingRouteLines.push(polyline);
+            map.setFitView([polyline]);
+        }
+
+        function renderStatsPanel(trip) {
+            const points = (trip && trip.points) ? trip.points : [];
+            const total = points.reduce((sum, p) => sum + p.cost, 0);
+            document.getElementById('trip-total-cost').innerText = `￥${total.toFixed(2)}`;
+            
+            const isPreview = previewTripIndex !== null;
+            const tripTitle = (trip && trip.tripName) ? trip.tripName : "未命名行程";
+            
+            document.getElementById('panel-title-tag').innerText = isPreview ? `👀 ${tripTitle}` : `🚩 ${tripTitle}`;
+            document.getElementById('trip-meta').innerText = `| ${points.length} 站点`;
+
+            const containerEl = document.getElementById('trip-nodes-container');
+            const listEl = document.getElementById('trip-nodes-list');
+
+            if (points.length === 0) {
+                containerEl.classList.add('hidden');
+                listEl.innerHTML = '';
+                return;
+            }
+
+            containerEl.classList.remove('hidden');
+            listEl.innerHTML = points.map((p, i) => `
+                <div onclick="openModal(${p.lat}, ${p.lng}, ${i})" class="p-1 rounded-lg border flex justify-between items-center cursor-pointer hover:bg-blue-50 transition" style="background-color: rgba(0,0,0,0.01);">
+                    <div class="truncate pr-1">
+                        <div class="font-bold theme-text-main text-[10px] truncate">${i + 1}. ${p.name} ✏️</div>
+                    </div>
+                    <div class="font-extrabold text-red-500 text-[10px] whitespace-nowrap">￥${p.cost.toFixed(2)}</div>
+                </div>
+            `).join('');
+        }
+
+        function editTripName(idx, event) {
+            event.stopPropagation();
+            const oldName = archivedTrips[idx].tripName || "示例行程";
+            const newName = prompt("✏️ 修改行程名称：", oldName);
+            if (newName && newName.trim() !== "") {
+                archivedTrips[idx].tripName = newName.trim();
+                saveArchivedTrips();
+                updateTripUI();
+                renderArchivedTrips();
+            }
+        }
+
+        function deleteArchivedTrip(idx) {
+            if (confirm('确定要永久删除该历史归档行程吗？')) {
+                if (previewTripIndex === idx) {
+                    previewTripIndex = null;
+                    clearMapOverlay();
+                }
+                archivedTrips.splice(idx, 1);
+                saveArchivedTrips();
+                updateTripUI();
+                renderArchivedTrips();
+            }
+        }
+
+        function renderArchivedTrips() {
+            const listEl = document.getElementById('archived-trips-list');
+            if (archivedTrips.length === 0) {
+                listEl.innerHTML = `<div class="theme-text-sub text-xs">暂无历史归档行程</div>`;
+                return;
+            }
+
+            listEl.innerHTML = archivedTrips.map((t, idx) => {
+                const cost = t.points.reduce((s, p) => s + p.cost, 0);
+                const isCurrentViewing = (previewTripIndex === idx);
+                const nameStr = t.tripName || "示例行程";
+                const dateStr = t.startTime ? t.startTime.split(' ')[0] : "--";
+
+                return `
+                    <div class="p-2 rounded-xl flex justify-between items-center border ${isCurrentViewing ? 'border-blue-500 bg-blue-50 shadow-xs' : ''}" style="background-color: rgba(0,0,0,0.01);">
+                        <div onclick="previewArchivedTrip(${idx})" class="cursor-pointer flex-1 truncate pr-2">
+                            <span class="font-bold text-blue-600 text-xs hover:underline" onclick="editTripName(${idx}, event)" title="点击修改行程名">🚩 ${nameStr}</span>
+                            <span class="theme-text-sub text-[10px] ml-1">(${dateStr} | ${t.points.length}点)</span>
+                        </div>
+                        <div class="flex items-center space-x-1 whitespace-nowrap">
+                            <span class="text-red-500 font-extrabold text-xs mr-1">￥${cost.toFixed(2)}</span>
+                            <button onclick="previewArchivedTrip(${idx})" class="px-2 py-0.5 border ${isCurrentViewing ? 'bg-blue-600 text-white' : 'theme-text-main'} rounded-lg text-[10px] font-semibold">
+                                ${isCurrentViewing ? '查看中' : '查看'}
+                            </button>
+                            <button onclick="restoreArchivedTrip(${idx})" class="px-2 py-0.5 text-white rounded-lg text-[10px] font-bold" style="background-color: var(--accent-color);">
+                                继续行程
+                            </button>
+                            <button onclick="deleteArchivedTrip(${idx})" class="text-gray-300 hover:text-red-500 font-bold px-1 text-xs">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function previewArchivedTrip(idx) {
+            if (previewTripIndex === idx) {
+                previewTripIndex = null;
+                clearMapOverlay();
+            } else {
+                previewTripIndex = idx;
+            }
+            updateTripUI();
+            renderArchivedTrips();
+        }
+
+        function restoreArchivedTrip(idx) {
+            if (confirm('确定要恢复该历史行程并继续打卡记账吗？')) {
+                activeTrip = archivedTrips.splice(idx, 1)[0];
+                activeTrip.isTravelling = true;
+                previewTripIndex = null;
+                
+                saveArchivedTrips();
+                saveActiveTrip();
+                
+                updateTripUI();
+                renderArchivedTrips();
+                alert(`🚀 已恢复行程【${activeTrip.tripName || '旅行'}】，您可以继续打卡记账啦！`);
+            }
+        }
+
+        // 初始化
+        initDateSelectors();
+        renderCalendarLedger();
+        toggleMainCategory('餐饮');
+    </script>
+</body>
+</html>
