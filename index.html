@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- 禁用缓存，确保手机主屏幕 App 每次打开时自动拉取 GitHub 最新代码 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <title>小步 · 记账与足迹</title>
     
     <link rel="icon" type="image/jpeg" href="icon.jpeg">
@@ -22,8 +28,9 @@
     <script src="https://webapi.amap.com/maps?v=2.0&key=92836525ccf18e11a09d1fa9f324fe00&plugin=AMap.PlaceSearch,AMap.AutoComplete,AMap.Driving,AMap.Geocoder"></script>
 
     <style>
+        /* 主题颜色配置（已将粉红优化为淡雅舒适的【樱粉】） */
         html[data-theme="warm-white"] { --app-bg: #f8fafc; --card-bg: #ffffff; --text-primary: #1e293b; --text-secondary: #64748b; --accent-color: #2563eb; --border-color: #f1f5f9; }
-        html[data-theme="sakura"] { --app-bg: #FFF5F7; --card-bg: #ffffff; --text-primary: #4A3B40; --text-secondary: #A68B93; --accent-color: #FF6B8B; --border-color: rgba(255, 107, 139, 0.1); }
+        html[data-theme="sakura"] { --app-bg: #FFF8F9; --card-bg: #ffffff; --text-primary: #5A4048; --text-secondary: #B08D96; --accent-color: #F48FB1; --border-color: rgba(244, 143, 177, 0.15); }
         html[data-theme="midnight"] { --app-bg: #0c0c0e; --card-bg: #1c1c1e; --text-primary: #f5f5f7; --text-secondary: #98989f; --accent-color: #0a84ff; --border-color: rgba(255, 255, 255, 0.08); }
         html[data-theme="forest"] { --app-bg: #F2F6F3; --card-bg: #ffffff; --text-primary: #1F3324; --text-secondary: #738F7A; --accent-color: #2E7D32; --border-color: rgba(46, 125, 50, 0.08); }
         html[data-theme="imperial"] { --app-bg: #F9F6F0; --card-bg: #ffffff; --text-primary: #3B2E2A; --text-secondary: #998A82; --accent-color: #C93B2B; --border-color: rgba(201, 59, 43, 0.1); }
@@ -72,8 +79,8 @@
                     <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-blue-500 inline-block"></span><span>柔白</span></div>
                     <span class="check-icon font-bold" style="color: var(--accent-color);">✓</span>
                 </div>
-                <div onclick="setTheme('sakura', '粉红')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
-                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-pink-400 inline-block"></span><span>粉红</span></div>
+                <div onclick="setTheme('sakura', '樱粉')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
+                    <div class="flex items-center space-x-2.5"><span class="w-4 h-4 rounded-full bg-pink-300 inline-block"></span><span>樱粉</span></div>
                     <span class="check-icon font-bold" style="color: var(--accent-color);"></span>
                 </div>
                 <div onclick="setTheme('midnight', '暗夜')" class="theme-option p-3.5 rounded-2xl theme-card-bg border cursor-pointer flex justify-between items-center font-semibold text-sm theme-text-main transition">
@@ -113,7 +120,7 @@
                     <button onclick="toggleMainCategory('购物')" id="cat-btn-购物" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🛍️ 购物</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
                     <button onclick="toggleMainCategory('门票')" id="cat-btn-门票" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🎫 门票</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
                     <button onclick="toggleMainCategory('住宿')" id="cat-btn-住宿" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>🏨 住宿</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
-                    <button onclick="toggleMainCategory('其他')" id="cat-btn-其他" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>📦 其他</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
+                    <button onclick="toggleMainCategory('other')" id="cat-btn-other" class="cat-btn py-3 rounded-2xl border font-semibold text-sm transition flex flex-col items-center justify-center gap-0.5"><span>📦 其他</span><span class="text-[9px] opacity-60">▼ 细分</span></button>
                 </div>
 
                 <div id="sub-category-box" class="hidden p-3 rounded-2xl border theme-card-bg space-y-1.5 transition-all duration-300" style="background-color: rgba(0,0,0,0.015);">
@@ -185,20 +192,20 @@
                     </div>
                 </div>
 
-                <!-- 搜索栏折叠岛 -->
+                <!-- 搜索栏折叠岛（高德智能辅助联想） -->
                 <div class="flex justify-between items-center pointer-events-auto">
                     <div class="relative w-full max-w-xs">
                         <div id="expand-search-box" class="hidden absolute top-0 left-0 w-full rounded-2xl shadow-xl border p-1 flex items-center gap-1 z-30" style="background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
-                            <input type="text" id="map-search-input" placeholder="搜美食/景点(回车)..." onkeydown="handleMapSearch(event)" class="w-full bg-transparent text-xs px-2.5 py-1.5 focus:outline-none theme-text-main">
+                            <input type="text" id="map-search-input" placeholder="输入目的地(直接定位)..." onkeydown="handleMapSearchKey(event)" class="w-full bg-transparent text-xs px-2.5 py-1.5 focus:outline-none theme-text-main">
                             <button onclick="toggleSearchBox()" class="text-xs text-gray-400 font-bold px-2">✕</button>
                         </div>
                         <button onclick="toggleSearchBox()" class="px-3 py-1.5 rounded-xl shadow border text-xs font-semibold theme-text-main flex items-center gap-1.5 active:scale-95 transition" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
-                            <span>🔍</span> <span>搜索附近地点...</span>
+                            <span>🔍</span> <span>搜索目的地(直接定位)...</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- 苹果毛玻璃透光打卡点列表（左侧对齐、通透磨砂） -->
+                <!-- 苹果毛玻璃透光打卡点列表 -->
                 <div id="trip-nodes-container" class="hidden rounded-2xl p-1 shadow-lg border max-h-36 overflow-y-auto space-y-0.5 pointer-events-auto w-64 self-start" style="background-color: rgba(255, 255, 255, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-color: rgba(255, 255, 255, 0.4);">
                     <div id="trip-nodes-list" class="divide-y divide-gray-200/50 text-xs"></div>
                 </div>
@@ -310,7 +317,7 @@
             '购物': ['🛒 超市百货', '👗 服饰鞋包', '📱 电子数码', '💄 美妆护肤', '🎁 伴手礼品'],
             '门票': ['🏛️ 景区门票', '🎢 游乐园票', '🎭 演出剧场', '🎨 展览场馆', '🎟️ 索道缆车'],
             '住宿': ['🏨 快捷酒店', '🏡 特色民宿', '🏰 豪华酒店', '⛺ 露营青旅'],
-            '其他': ['🧼 日常用品', '💊 医药健康', '💸 临时服务', '📦 琐碎杂项']
+            'other': ['🧼 日常用品', '💊 医药健康', '💸 临时服务', '📦 琐碎杂项']
         };
 
         let currentMainCat = '餐饮';
@@ -381,7 +388,8 @@
                 btn.style.backgroundColor = "";
             });
 
-            const activeBtn = document.getElementById(`cat-btn-${mainCat}`);
+            const btnId = mainCat === 'other' ? 'cat-btn-other' : `cat-btn-${mainCat}`;
+            const activeBtn = document.getElementById(btnId);
             if (activeBtn) {
                 activeBtn.style.borderColor = "var(--accent-color)";
                 activeBtn.style.color = "var(--accent-color)";
@@ -392,13 +400,14 @@
             const titleEl = document.getElementById('sub-cat-title');
             const itemsEl = document.getElementById('sub-category-items');
 
-            titleEl.innerText = `点击选择【${mainCat}】的细分类型：`;
+            const displayName = mainCat === 'other' ? '其他' : mainCat;
+            titleEl.innerText = `点击选择【${displayName}】的细分类型：`;
             const subItems = subCategoriesMap[mainCat] || [];
 
             if (!subItems.includes(currentSubCat)) {
                 currentSubCat = subItems[0] || '';
             }
-            currentCategory = `${mainCat} - ${currentSubCat}`;
+            currentCategory = `${displayName} - ${currentSubCat}`;
 
             itemsEl.innerHTML = subItems.map(item => {
                 const isSelected = (item === currentSubCat);
@@ -415,7 +424,8 @@
 
         function selectSubCategory(mainCat, subItem) {
             currentSubCat = subItem;
-            currentCategory = `${mainCat} - ${subItem}`;
+            const displayName = mainCat === 'other' ? '其他' : mainCat;
+            currentCategory = `${displayName} - ${subItem}`;
 
             document.querySelectorAll('.sub-item-btn').forEach(btn => {
                 if (btn.innerText.trim() === subItem.trim()) {
@@ -461,6 +471,7 @@
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const dayStr = now.toISOString().split('T')[0];
+            const exactTimeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
             document.getElementById('filter-year').value = year;
             document.getElementById('filter-month').value = month;
@@ -474,6 +485,7 @@
                 id: Date.now(),
                 date: now.toISOString(),
                 displayDate: now.toLocaleString(),
+                exactTime: exactTimeString,
                 category: currentCategory,
                 amount: parseFloat(amount).toFixed(2),
                 note: note || '无备注'
@@ -546,7 +558,11 @@
                                     <div class="flex justify-between items-center text-xs theme-text-main theme-card-bg p-2.5 rounded-xl border shadow-3xs">
                                         <div class="pr-2 truncate">
                                             <div class="font-bold">${item.category}</div>
-                                            <div class="text-[10px] theme-text-sub mt-0.5">备注: ${item.note}</div>
+                                            <div class="text-[10px] theme-text-sub mt-0.5 flex items-center gap-1.5">
+                                                <span>⏰ ${item.exactTime || item.displayDate.split(' ')[1] || '刚刚'}</span>
+                                                <span>·</span>
+                                                <span>备注: ${item.note}</span>
+                                            </div>
                                         </div>
                                         <div class="flex items-center space-x-2 whitespace-nowrap">
                                             <span class="font-extrabold text-sm" style="color: var(--accent-color);">￥${item.amount}</span>
@@ -569,55 +585,28 @@
             }
         }
 
-        function handleMapSearch(e) {
+        function handleMapSearchKey(e) {
             if (e.key === 'Enter') {
                 const keyword = document.getElementById('map-search-input').value.trim();
                 if (!keyword || !map || !placeSearch) return;
 
-                searchPoiMarkers.forEach(m => map.remove(m));
-                searchPoiMarkers = [];
+                placeSearch.search(keyword, (status, result) => {
+                    if (status === 'complete' && result.poiList && result.poiList.pois && result.poiList.pois.length > 0) {
+                        const poi = result.poiList.pois[0];
+                        map.setCenter([poi.location.lng, poi.location.lat]);
+                        map.setZoom(16);
 
-                const center = map.getCenter();
-                placeSearch.searchNearBy(keyword, center, 3000, (status, result) => {
-                    if (status === 'complete' && result.poiList && result.poiList.pois) {
-                        const pois = result.poiList.pois;
-                        alert(`🔍 成功为您在附近找到 ${pois.length} 个【${keyword}】相关地点，已在地图上标出！`);
-
-                        pois.forEach((poi) => {
-                            let iconEmoji = "📍";
-                            if (keyword.includes('美食') || keyword.includes('餐厅') || keyword.includes('吃')) iconEmoji = "🍔";
-                            else if (keyword.includes('景点') || keyword.includes('公园') || keyword.includes('玩')) iconEmoji = "🏞️";
-                            else if (keyword.includes('加油')) iconEmoji = "⛽";
-
-                            const marker = new AMap.Marker({
-                                position: [poi.location.lng, poi.location.lat],
-                                content: `<div style="background:#2563eb; color:white; padding:4px 8px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.2); font-size:11px; font-weight:bold; display:flex; align-items:center; gap:3px; white-space:nowrap;">${iconEmoji} ${poi.name}</div>`,
-                                offset: new AMap.Pixel(-15, -15)
-                            });
-
-                            marker.on('click', () => {
-                                map.setCenter([poi.location.lng, poi.location.lat]);
-                                openPoiModal({
-                                    name: poi.name,
-                                    type: poi.type || keyword,
-                                    address: poi.address || '暂无详细地址',
-                                    tel: poi.tel || '暂无电话',
-                                    lat: poi.location.lat,
-                                    lng: poi.location.lng,
-                                    photos: poi.photos || []
-                                });
-                            });
-
-                            marker.setMap(map);
-                            searchPoiMarkers.push(marker);
+                        openPoiModal({
+                            name: poi.name,
+                            type: poi.type || keyword,
+                            address: poi.address || '暂无详细地址',
+                            tel: poi.tel || '暂无电话',
+                            lat: poi.location.lat,
+                            lng: poi.location.lng,
+                            photos: poi.photos || []
                         });
-
-                        if (pois.length > 0) {
-                            map.setCenter([pois[0].location.lng, pois[0].location.lat]);
-                            map.setZoom(14);
-                        }
                     } else {
-                        alert('抱歉，未能在附近检索到相关结果，换个关键词试试吧！');
+                        alert('未找到该目的地，请从联想下拉列表中选择确认！');
                     }
                 });
                 toggleSearchBox();
@@ -654,17 +643,19 @@
             const auto = new AMap.AutoComplete({ input: "map-search-input" });
             auto.on("select", (e) => {
                 if (e.poi && e.poi.location) {
-                    map.setCenter(e.poi.location);
-                    map.setZoom(15);
+                    map.setCenter([e.poi.location.lng, e.poi.location.lat]);
+                    map.setZoom(16);
+
                     openPoiModal({
                         name: e.poi.name,
-                        type: e.poi.type || '地点标点',
+                        type: e.poi.type || '目标地点',
                         address: e.poi.address || '暂无详细地址',
                         tel: e.poi.tel || '暂无电话',
                         lat: e.poi.location.lat,
                         lng: e.poi.location.lng,
                         photos: e.poi.photos || []
                     });
+                    toggleSearchBox();
                 }
             });
 
@@ -743,7 +734,7 @@
                 const lng = pos.coords.longitude;
                 const lat = pos.coords.latitude;
                 map.setCenter([lng, lat]);
-                map.setZoom(15);
+                map.setZoom(16);
 
                 if (myLocationMarker) map.remove(myLocationMarker);
                 myLocationMarker = new AMap.Marker({
@@ -779,7 +770,7 @@
         function openPoiModal(data) {
             selectedPoiData = data;
             document.getElementById('poi-detail-name').innerText = data.name;
-            document.getElementById('poi-detail-type').innerText = data.type.split(';')[0];
+            document.getElementById('poi-detail-type').innerText = (data.type || '').split(';')[0];
             document.getElementById('poi-detail-address').innerText = data.address;
             document.getElementById('poi-detail-tel').innerText = data.tel;
 
@@ -1033,7 +1024,7 @@
                 drawFallbackPolyline(trip);
             } else if (trip.points.length === 1) {
                 map.setCenter([trip.points[0].lng, trip.points[0].lat]);
-                map.setZoom(15);
+                map.setZoom(16);
             }
 
             const lastIdx = trip.points.length - 1;
